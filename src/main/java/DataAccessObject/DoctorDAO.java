@@ -108,4 +108,5 @@ public class DoctorDAO {
         d.setVerified(rs.getBoolean("verified"));
         return d;
     }
+
 }
