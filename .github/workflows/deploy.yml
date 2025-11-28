@@ -32,7 +32,7 @@ jobs:
 
       - name: Rename war file
         run: |
-          mv ./build/libs/Tutorial5-1.0-SNAPSHOT.war ./ROOT.war
+          mv ./build/libs/PatientServer-1.0-SNAPSHOT.war ./ROOT.war
 
       - name: Deploy to Tsuru
         env:
