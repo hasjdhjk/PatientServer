@@ -72,7 +72,12 @@ public class RegisterServlet extends HttpServlet {
                 registerReq.familyName, passwordHash, token);
 
         // 6. Send verification email
-        String appBaseUrl = System.getenv("APP_BASE_URL"); // e.g. http://myapp.tsuru.plymouth.ac.uk
+        String appBaseUrl = System.getenv("APP_BASE_URL"); // tsuru website
+        // testing url
+        if (appBaseUrl == null || appBaseUrl.isEmpty()) {
+            System.out.println(appBaseUrl);
+            appBaseUrl = "http://localhost:8080/PatientServer";
+        }
         String verifyLink = appBaseUrl + "/verifyEmail?token=" + token;
 
         String subject = "Verify your HealthTrack account";
