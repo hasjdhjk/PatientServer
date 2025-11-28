@@ -9,7 +9,7 @@ public class DatabaseConnection {
     private static final String LOCAL_URL =
             "jdbc:postgresql://localhost:5432/postgres";
     private static final String LOCAL_USER = "postgres";     // your local username
-    private static final String LOCAL_PASSWORD = "password"; // your local password
+    private static final String LOCAL_PASSWORD = "h7182005H123"; // your local password
 
     // Detect if running on Tsuru (environment variables exist)
     private static boolean runningOnTsuru() {

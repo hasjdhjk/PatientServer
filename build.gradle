@@ -37,6 +37,7 @@ dependencies {
     implementation 'com.sun.mail:jakarta.mail:2.0.1'
     implementation group: 'com.google.code.gson', name:'gson', version: '2.7'
 
+    implementation 'org.postgresql:postgresql:42.7.3'
 }
 
 test {
