@@ -1,3 +1,16 @@
+package Servlet;
+
+import DataAccessObject.DoctorDAO;
+import Models.Doctor;
+
+import com.google.gson.Gson;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+
 @WebServlet("/resetPassword")
 public class ResetPasswordServlet extends HttpServlet {
 

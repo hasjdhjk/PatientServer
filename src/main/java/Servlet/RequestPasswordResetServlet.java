@@ -1,3 +1,21 @@
+package Servlet;
+
+import DataAccessObject.DoctorDAO;
+import Models.Doctor;
+
+import Utils.EmailSender;
+import com.google.gson.Gson;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+
 @WebServlet("/requestPasswordReset")
 public class RequestPasswordResetServlet extends HttpServlet {
 
