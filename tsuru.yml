@@ -1,0 +1,10 @@
+hooks:
+  build:
+    - chmod +x gradlew
+    - ./gradlew clean build
+deployment:
+  cleanup:
+    - rm -f ROOT.war
+build:
+  build:
+    - mv build/libs/*.war ROOT.war
