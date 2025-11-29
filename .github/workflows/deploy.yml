@@ -48,7 +48,7 @@ jobs:
           tsuru env-set -a bioeng-fguys-app SMTP_USERNAME=$SMTP_USERNAME
           tsuru env-set -a bioeng-fguys-app SMTP_PASSWORD=$SMTP_PASSWORD
           tsuru env-set -a bioeng-fguys-app APP_BASE_URL=$APP_BASE_URL
-      
+
       - name: Deploy to Tsuru
         env:
           TSURU_TOKEN: ${{ secrets.TSURU_TOKEN }}
