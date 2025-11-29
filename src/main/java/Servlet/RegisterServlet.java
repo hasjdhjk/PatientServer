@@ -97,4 +97,13 @@ public class RegisterServlet extends HttpServlet {
         // 7. Respond OK
         out.println(gson.toJson(new SimpleResponse("ok", "Registration successful. Check your email.")));
     }
+
+    // testing
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+
+        resp.setContentType("text/plain");
+        resp.getWriter().write("Hello from /register on Tsuru!");
+    }
 }
