@@ -86,13 +86,17 @@ public class RegisterServlet extends HttpServlet {
                 verifyLink + "\n\n" +
                 "If you did not register, ignore this email.";
 
-        try {
-            EmailSender.sendEmail(registerReq.email, subject, body);
-        } catch (MessagingException e) {
-            e.printStackTrace();
-            out.println(gson.toJson(new SimpleResponse("error", "Failed to send verification email")));
-            return;
-        }
+//        try {
+//            EmailSender.sendEmail(registerReq.email, subject, body);
+//        } catch (MessagingException e) {
+//            e.printStackTrace();
+//            out.println(gson.toJson(new SimpleResponse("error", "Failed to send verification email")));
+//            return;
+//        }
+
+        // Disable email sending for local + Tsuru testing
+        System.out.println("EMAIL DISABLED — verification link would be:");
+        System.out.println(verifyLink);
 
         // 7. Respond OK
         out.println(gson.toJson(new SimpleResponse("ok", "Registration successful. Check your email.")));
