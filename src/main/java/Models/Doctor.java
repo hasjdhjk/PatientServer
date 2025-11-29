@@ -11,7 +11,7 @@ public class Doctor {
     private String resetToken;
 
     public Doctor() {}
- 
+
     public Doctor(int id, String email, String givenName, String familyName,
                   String passwordHash, boolean verified) {
         this.id = id;
