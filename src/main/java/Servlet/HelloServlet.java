@@ -14,6 +14,7 @@ public class HelloServlet extends HttpServlet {
             throws IOException {
 
         resp.setContentType("text/plain");
-        resp.getWriter().write("任建坤大傻瓜");
+//        resp.getWriter().write("Hi! Server is running on Tsuru!");
+        resp.getWriter().write("任建坤大傻逼!");
     }
 }
