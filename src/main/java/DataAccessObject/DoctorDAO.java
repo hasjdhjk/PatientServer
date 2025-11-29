@@ -21,7 +21,7 @@ public class DoctorDAO {
         } catch (Exception e) { e.printStackTrace(); }
         return null;
     }
-
+ 
     public static Doctor findByVerificationToken(String token) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT * FROM doctors WHERE verification_token = ?";
