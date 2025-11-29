@@ -7,4 +7,4 @@ deployment:
     - rm -f ROOT.war
 build:
   build:
-    - mv build/libs/*.war ROOT.war
+    - mv build/libs/PatientServer-1.0-SNAPSHOT.war ROOT.war
