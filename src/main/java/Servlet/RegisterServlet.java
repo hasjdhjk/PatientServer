@@ -71,6 +71,12 @@ public class RegisterServlet extends HttpServlet {
         DoctorDAO.insertDoctor(registerReq.email, registerReq.givenName,
                 registerReq.familyName, passwordHash, token);
 
+        // TEMPORARY: auto-verify user (skip email verification)
+        Doctor newDoctor = DoctorDAO.findByEmail(registerReq.email);
+        if (newDoctor != null) {
+            DoctorDAO.markVerified(newDoctor.getId());
+        }
+
         // 6. Send verification email
         String appBaseUrl = System.getenv("APP_BASE_URL"); // tsuru website
         // testing url
