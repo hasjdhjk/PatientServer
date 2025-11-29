@@ -34,20 +34,20 @@ jobs:
         run: |
           mv ./build/libs/PatientServer-1.0-SNAPSHOT.war ./ROOT.war
 
-      - name: Set Tsuru Environment Variables
-        env:
-          TSURU_TOKEN: ${{ secrets.TSURU_TOKEN }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
-        run: |
-          tsuru env-set -a bioeng-fguys-app SMTP_HOST=$SMTP_HOST
-          tsuru env-set -a bioeng-fguys-app SMTP_PORT=$SMTP_PORT
-          tsuru env-set -a bioeng-fguys-app SMTP_USERNAME=$SMTP_USERNAME
-          tsuru env-set -a bioeng-fguys-app SMTP_PASSWORD=$SMTP_PASSWORD
-          tsuru env-set -a bioeng-fguys-app APP_BASE_URL=$APP_BASE_URL
+#      - name: Set Tsuru Environment Variables
+#        env:
+#          TSURU_TOKEN: ${{ secrets.TSURU_TOKEN }}
+#          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+#          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+#          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+#          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+#          APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
+#        run: |
+#          tsuru env-set -a bioeng-fguys-app SMTP_HOST=$SMTP_HOST
+#          tsuru env-set -a bioeng-fguys-app SMTP_PORT=$SMTP_PORT
+#          tsuru env-set -a bioeng-fguys-app SMTP_USERNAME=$SMTP_USERNAME
+#          tsuru env-set -a bioeng-fguys-app SMTP_PASSWORD=$SMTP_PASSWORD
+#          tsuru env-set -a bioeng-fguys-app APP_BASE_URL=$APP_BASE_URL
 
       - name: Deploy to Tsuru
         env:
