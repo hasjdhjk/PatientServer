@@ -13,7 +13,7 @@ public class DoctorDAO {
             String sql = "SELECT * FROM doctors WHERE email = ?";
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1, email);
-
+ 
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return mapRow(rs);
