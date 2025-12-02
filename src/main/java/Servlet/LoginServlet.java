@@ -50,6 +50,9 @@ public class LoginServlet extends HttpServlet {
 
         PrintWriter out = resp.getWriter();
 
+        System.out.println("EMAIL: " + loginReq.email);
+        System.out.println("HASH INPUT: " + Integer.toHexString(loginReq.password.hashCode()));
+
         Doctor d = DoctorDAO.findByEmail(loginReq.email);
         if (d == null) {
             out.println(gson.toJson(new LoginResponse("error", "Invalid credentials")));
