@@ -35,18 +35,22 @@ public class DatabaseConnection {
      *   2) PGHOST / PGPORT / PGDATABASE / PGUSER / PGPASSWORD
      */
     public static Connection getConnection() {
+
+        // 👇 只会在 Tsuru 打印一次日志
+        debugPrintEnvOnce();
+
+        DbInfo info = resolveDbInfoFromEnv();
+
         try {
             Class.forName("org.postgresql.Driver");
-
-            DbInfo info = resolveDbInfoFromEnv();
-
-            Connection conn = DriverManager.getConnection(info.jdbcUrl, info.user, info.pass);
-            if (conn == null) throw new SQLException("DriverManager.getConnection returned null");
-            return conn;
-
+            return DriverManager.getConnection(info.jdbcUrl, info.user, info.pass);
         } catch (Exception e) {
-            // IMPORTANT: print env-based details without leaking password
-            throw new RuntimeException("DB connection failed: " + safeDebugInfo() + " msg=" + e.getMessage(), e);
+            throw new RuntimeException(
+                    "DB connection failed: url=" + info.jdbcUrl +
+                            " user=" + info.user +
+                            " msg=" + e.getMessage(),
+                    e
+            );
         }
     }
 
@@ -197,5 +201,31 @@ public class DatabaseConnection {
             this.user = user == null ? "" : user;
             this.pass = pass == null ? "" : pass;
         }
+    }
+    private static void debugPrintEnvOnce() {
+        // 只在 Tsuru / 云端打印，避免本地污染日志
+        if (System.getenv("TSURU_APPNAME") == null) return;
+
+        System.out.println("========== TSURU ENV DEBUG ==========");
+
+        // 打印 TSURU_SERVICES 原始字符串（最重要）
+        String tsuruServices = System.getenv("TSURU_SERVICES");
+        if (tsuruServices == null) {
+            System.out.println("TSURU_SERVICES = <null>");
+        } else {
+            System.out.println("TSURU_SERVICES raw:");
+            System.out.println(tsuruServices);
+        }
+
+        // 顺便看看有没有 DATABASE_URL / PG*
+        System.out.println("DATABASE_URL = " + System.getenv("DATABASE_URL"));
+        System.out.println("PGHOST = " + System.getenv("PGHOST"));
+        System.out.println("PGPORT = " + System.getenv("PGPORT"));
+        System.out.println("PGDATABASE = " + System.getenv("PGDATABASE"));
+        System.out.println("PGUSER = " + System.getenv("PGUSER"));
+        System.out.println("PGPASSWORD = " +
+                (System.getenv("PGPASSWORD") == null ? "<null>" : "<hidden>"));
+
+        System.out.println("=====================================");
     }
 }
