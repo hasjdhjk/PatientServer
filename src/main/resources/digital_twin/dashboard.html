@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Clinician Monitoring Dashboard</title>
+
+    <style>
+        :root{
+            --bg0: #d7e6f4;
+            --bg1:#ffffff;
+            --panel:#ffffff;
+            --stroke:#cbd5e1;
+            --muted:#000000;
+            --shadow:0 10px 30px rgba(0,0,0,.08);
+            --r:18px;
+            --rr:16;
+            --hr:80;
+        }
+
+        body{
+            margin:0;
+            background:#f8fafc;
+            color:#000000;
+            font-family:Arial,sans-serif;
+        }
+
+        h1{
+            text-align:center;
+            margin:16px 0;
+            font-weight:600;
+            letter-spacing:.2px;
+            color:#000000;
+        }
+
+        .sub{
+            text-align:center;
+            margin:-8px 0 14px;
+            color:#000000;
+            font-size:12px;
+        }
+
+        .app{
+            max-width:1400px;
+            margin:0 auto;
+            display:grid;
+            grid-template-columns:300px 1.1fr 360px;
+            gap:40px;
+            padding:0 24px 32px;
+            align-items:start;
+        }
+
+        .panel{
+            background:#ffffff;
+            border-radius:var(--r);
+            padding:18px;
+            box-shadow:inset 0 0 0 1px var(--stroke), var(--shadow);
+            min-height:640px;
+            color:#000000;
+        }
+
+        .panel h3{
+            text-align:center;
+            margin:0 0 14px;
+            color:#000000;
+        }
+
+        select, textarea, input, button{
+            width:100%;
+            box-sizing:border-box;
+            padding:10px;
+            border-radius:12px;
+            background:#ffffff;
+            color:#000000;
+            border:1px solid var(--stroke);
+            margin-bottom:10px;
+            outline:none;
+        }
+
+        textarea{ resize:none; min-height:84px; }
+
+        button{
+            cursor:pointer;
+            background: #628ff3;
+            color:#ffffff;
+        }
+        button:hover{ filter:brightness(1.05); }
+
+        .metric{
+            background:#e0ecff;
+            padding:12px;
+            margin-bottom:12px;
+            border-radius:14px;
+            box-shadow:inset 0 0 0 1px var(--stroke);
+            font-size:14px;
+            color:#000000;
+        }
+
+        .metric .title{
+            font-weight:700;
+            margin-bottom:8px;
+        }
+
+        .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+
+        .chip{
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            padding:6px 10px;
+            border-radius:999px;
+            background:#bfdbfe;
+            border:1px solid var(--stroke);
+            font-size:12px;
+            color:#000000;
+        }
+
+        .dot{width:8px;height:8px;border-radius:999px;}
+        .dot.card{background:#ef4444;}
+        .dot.resp{background:#60a5fa;}
+        .dot.met{background:#a855f7;}
+        .dot.other{background:#64748b;}
+
+        .noteCard{
+            background:#e0ecff;
+            border:1px solid var(--stroke);
+            border-radius:14px;
+            padding:10px;
+            margin-bottom:8px;
+        }
+        .noteText{ font-size:13px; line-height:1.35; }
+
+        .center{
+            display:flex;
+            justify-content:center;
+            align-items:flex-start;
+        }
+
+        .twinWrap{
+            width:420px;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+        }
+
+        .twin{
+            position:relative;
+            width:380px;
+            height:620px;
+            flex-shrink:0;
+        }
+
+        .twin img,.twin svg{
+            position:absolute;
+            inset:0;
+            width:100%;
+            height:100%;
+        }
+
+        #lungs{ fill:rgba(96,165,250,0.35); }
+        #heart path{ fill:rgba(239,68,68,0.45); }
+
+        .beat{
+            animation:beat calc(85s / var(--hr)) infinite;
+            transform-origin:50% 40%;
+            transform-box:fill-box;
+        }
+        @keyframes beat{
+            0%{transform:scale(1)}
+            20%{transform:scale(1.06)}
+            40%{transform:scale(1)}
+        }
+
+        .breathe{
+            animation:breathe calc(60s / var(--rr)) infinite ease-in-out;
+            transform-origin:center;
+            transform-box:fill-box;
+        }
+        @keyframes breathe{
+            50%{transform:scale(1.12,1.08) translateY(-6px)}
+        }
+
+        .condition-line{stroke-width:2;stroke-dasharray:4 4}
+        .label-bg{fill:#ffffff;}
+        .condition-label{font-size:13px;font-weight:600;fill:#000000}
+        .cardiac{stroke:#ef4444}
+        .respiratory{stroke:#60a5fa}
+        .metabolic{stroke:#a855f7}
+        .hidden{opacity:0}
+
+        .graph{
+            background:#e0ecff;
+            border-radius:14px;
+            padding:12px;
+            margin-bottom:14px;
+            box-shadow:inset 0 0 0 1px var(--stroke);
+        }
+
+        .graph h4{
+            margin:0 0 8px;
+            font-weight:700;
+            font-size:13px;
+            color:#000000;
+        }
+
+        svg.wave{width:100%;height:90px}
+
+        .deviceGrid{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:12px;
+        }
+
+        .device{
+            background:#bfdbfe;
+            border-radius:16px;
+            padding:12px;
+            box-shadow:inset 0 0 0 1px var(--stroke);
+            text-align:center;
+            color:#000000;
+        }
+
+        .device .label{font-size:12px;}
+        .device .value{font-size:32px;font-weight:700}
+
+        .hr{color:#ef4444}
+        .rr{color:#a78bfa}
+        .spo2{color:#22c55e}
+        .bp{color:#60a5fa}
+        .temp{color:#facc15}
+
+        /* small debug badge */
+        #dbg{
+            position:fixed;
+            left:12px;
+            bottom:12px;
+            background:#fff;
+            border:1px solid #cbd5e1;
+            border-radius:10px;
+            padding:8px 10px;
+            font-size:12px;
+            z-index:9999;
+        }
+    </style>
+</head>
+
+<body>
+<h1>Clinician Monitoring Dashboard</h1>
+<div class="sub">Live telemetry from PatientServer DB • Notes are stored client-side only</div>
+
+<div class="app">
+
+    <!-- LEFT -->
+    <div class="panel">
+        <h3>Patient Overview</h3>
+        <select id="patientSelect"></select>
+
+        <div class="metric" id="demographics"></div>
+
+        <div class="metric">
+            <div class="title">Health Records</div>
+            <div id="records" class="chips"></div>
+            <div style="opacity:.7;font-size:12px;margin-top:8px">
+                (If your DB doesn’t store records yet, this stays placeholder.)
+            </div>
+        </div>
+
+        <div class="metric">
+            <div class="title">Doctor Annotations</div>
+
+            <div class="quickRow">
+                <button class="quickBtn" type="button" onclick="quickNote('Review vitals trend and reassess.')">Trend review</button>
+                <button class="quickBtn" type="button" onclick="quickNote('Medication review required.')">Medication</button>
+                <button class="quickBtn" type="button" onclick="quickNote('Escalate for senior review.')">Escalate</button>
+            </div>
+
+            <textarea id="noteText" placeholder="Enter clinical note..."></textarea>
+
+            <div class="annoGrid">
+                <div>
+                    <select id="noteLevel">
+                        <option value="info">Info</option>
+                        <option value="warn">Warning</option>
+                        <option value="crit">Critical</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="button" onclick="addNote()">Add Note</button>
+                </div>
+            </div>
+
+            <div id="notes"></div>
+        </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center">
+        <div class="twinWrap">
+            <div class="twin">
+                <img src="body.png" alt="Body" />
+
+                <svg viewBox="0 0 660 1066">
+                    <g id="lungs" class="breathe">
+                        <ellipse cx="285" cy="325" rx="85" ry="135"/>
+                        <ellipse cx="375" cy="325" rx="85" ry="135"/>
+                    </g>
+
+                    <g transform="translate(10,-115)">
+                        <g id="heart" class="beat" style="--hr:80">
+                            <path d="M330 395 C305 360 260 360 260 405
+                       C260 455 330 495 330 495
+                       C330 495 400 455 400 405
+                       C400 360 355 360 330 395 Z"/>
+                        </g>
+                    </g>
+
+                    <g font-family="Arial">
+                        <g id="lblCard" class="cardiac hidden">
+                            <line x1="330" y1="360" x2="80" y2="360" class="condition-line cardiac"/>
+                            <rect x="10" y="340" width="220" height="28" rx="6" class="label-bg"/>
+                            <text id="labCard" x="20" y="360" class="condition-label cardiac"></text>
+                        </g>
+
+                        <g id="lblResp" class="respiratory hidden">
+                            <line x1="300" y1="260" x2="80" y2="220" class="condition-line respiratory"/>
+                            <rect x="10" y="200" width="220" height="28" rx="6" class="label-bg"/>
+                            <text id="labResp" x="20" y="220" class="condition-label respiratory"></text>
+                        </g>
+
+                        <g id="lblMet" class="metabolic hidden">
+                            <line x1="330" y1="600" x2="80" y2="600" class="condition-line metabolic"/>
+                            <rect x="10" y="580" width="220" height="28" rx="6" class="label-bg"/>
+                            <text id="labMet" x="20" y="600" class="condition-label metabolic"></text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="panel">
+        <h3>Live Telemetry</h3>
+
+        <div class="graph">
+            <h4>ECG</h4>
+            <svg id="ecg" class="wave" viewBox="0 0 300 100"></svg>
+        </div>
+
+        <div class="graph">
+            <h4>Respiration</h4>
+            <svg id="resp" class="wave" viewBox="0 0 300 100"></svg>
+        </div>
+
+        <div class="deviceGrid">
+            <div class="device hr"><div class="label">Heart Rate</div><div id="dHR" class="value">--</div></div>
+            <div class="device rr"><div class="label">Resp Rate</div><div id="dRR" class="value">--</div></div>
+            <div class="device spo2"><div class="label">SpO₂</div><div id="dSpO2" class="value">--</div></div>
+            <div class="device bp"><div class="label">Blood Pressure</div><div id="dBP" class="value">--/--</div></div>
+            <div class="device temp"><div class="label">Temperature</div><div id="dTemp" class="value">--.-</div></div>
+            <div class="device"><div class="label">Status</div><div id="dStatus" class="value" style="font-size:20px">--</div></div>
+        </div>
+    </div>
+
+</div>
+
+<div id="dbg">DB: loading…</div>
+
+<script>
+    // =========================
+    // 1) Server-backed patients
+    // =========================
+
+    // These are populated from GET ../api/patients?doctor=demo
+    let patients = [];   // [{id, givenname, familyname, bp, temperature, heartrate, ...}]
+    let currentPatientId = null;
+
+    // “Live state” for right-side vitals
+    let live = null;
+
+    // waveform phases
+    let ecgP=0, respP=0;
+
+    const sel = document.getElementById("patientSelect");
+    const dbg = document.getElementById("dbg");
+
+    function escapeHtml(str){
+        return String(str ?? "").replace(/[&<>"']/g, m => ({
+            "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+        }[m]));
+    }
+
+    function parseBP(bpStr){
+        // accepts "150/95"
+        if(!bpStr) return {sys:0,dia:0};
+        const parts = String(bpStr).split("/");
+        if(parts.length !== 2) return {sys:0,dia:0};
+        const sys = Number(parts[0].trim()) || 0;
+        const dia = Number(parts[1].trim()) || 0;
+        return {sys, dia};
+    }
+
+    function displayName(p){
+        if(!p) return "Unknown";
+        const gn = p.givenname ?? p.givenName ?? p.name ?? "";
+        const fn = p.familyname ?? p.familyName ?? "";
+        const full = (gn + " " + fn).trim();
+        return full || ("Patient " + (p.id ?? ""));
+    }
+
+    async function fetchPatientsList(){
+        const doctor = "demo"; // TODO: replace with logged-in doctor username
+        const url = `../api/patients?doctor=${encodeURIComponent(doctor)}`;
+        const res = await fetch(url, { cache: "no-store" });
+        if(!res.ok) throw new Error(`patients list failed ${res.status}`);
+        const arr = await res.json();
+        if(!Array.isArray(arr)) throw new Error("patients list not array");
+        return arr;
+    }
+
+    function populateDropdown(){
+        sel.innerHTML = "";
+        patients.forEach(p=>{
+            const opt = document.createElement("option");
+            opt.value = String(p.id);
+            opt.textContent = displayName(p);
+            sel.appendChild(opt);
+        });
+
+        // choose a patient
+        if(currentPatientId == null && patients.length){
+            currentPatientId = patients[0].id;
+        }
+        if(currentPatientId != null){
+            sel.value = String(currentPatientId);
+        }
+    }
+
+    function renderLeftPanelForCurrent(){
+        const p = patients.find(x => String(x.id) === String(currentPatientId));
+
+        // demographics from DB (age/gender may not exist yet)
+        const age = p?.age ?? "--";
+        const gender = p?.gender ?? "--";
+        demographics.innerHTML =
+            `<strong>${escapeHtml(displayName(p))}</strong><br>
+       Gender: ${escapeHtml(gender)}<br>
+       Age: ${escapeHtml(age)}<br>
+       ID: ${escapeHtml(p?.id)}`;
+
+        // health records: if your DB doesn’t have it, show placeholder chips
+        const recs = Array.isArray(p?.records) ? p.records : [];
+        records.innerHTML = (recs.length ? recs : ["(no records in DB yet)"]).map(r=>{
+            const t = String(r).toLowerCase();
+            let cls = "other";
+            if(t.includes("cardio") || t.includes("hyper") || t.includes("arrhy")) cls="card";
+            else if(t.includes("copd") || t.includes("asth") || t.includes("resp")) cls="resp";
+            else if(t.includes("diab")) cls="met";
+            return `<span class="chip"><span class="dot ${cls}"></span>${escapeHtml(r)}</span>`;
+        }).join("");
+
+        // body condition labels: if your DB has labels, use them; else hide all
+        const labels = p?.labels || {};
+        labCard.textContent = labels.card || "";
+        labResp.textContent = labels.resp || "";
+        labMet.textContent  = labels.met  || "";
+
+        lblCard.classList.toggle("hidden", !labels.card);
+        lblResp.classList.toggle("hidden", !labels.resp);
+        lblMet.classList.toggle("hidden", !labels.met);
+    }
+
+    // =========================
+    // 2) Notes (client-side)
+    // =========================
+    function quickNote(text){
+        noteText.value = text;
+        noteText.focus();
+    }
+
+    function getNotesKey(){
+        return `notes_patient_${currentPatientId}`;
+    }
+
+    function loadNotes(){
+        try{
+            const raw = localStorage.getItem(getNotesKey());
+            return raw ? JSON.parse(raw) : [];
+        }catch{ return []; }
+    }
+
+    function saveNotes(notes){
+        try{
+            localStorage.setItem(getNotesKey(), JSON.stringify(notes));
+        }catch{}
+    }
+
+    function addNote(){
+        const text = noteText.value.trim();
+        if(!text) return;
+        const notesArr = loadNotes();
+        notesArr.unshift({ text, time: new Date().toLocaleString() });
+        saveNotes(notesArr);
+        noteText.value = "";
+        renderNotes();
+    }
+
+    function delNote(idx){
+        const notesArr = loadNotes();
+        notesArr.splice(idx,1);
+        saveNotes(notesArr);
+        renderNotes();
+    }
+
+    function renderNotes(){
+        const notesArr = loadNotes();
+        notes.innerHTML = notesArr.length ? notesArr.map((n,i)=>`
+      <div class="noteCard">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-weight:700;font-size:12px">NOTE</span>
+          <span style="font-size:11px;opacity:.8">${escapeHtml(n.time)}</span>
+          <button type="button" style="width:auto;padding:6px 10px;border-radius:10px" onclick="delNote(${i})">Delete</button>
+        </div>
+        <div class="noteText">${escapeHtml(n.text)}</div>
+      </div>
+    `).join("") : `<div style="opacity:.7;font-size:13px">No notes yet. Add a note to document observations.</div>`;
+    }
+
+    // =========================
+    // 3) Right panel vitals
+    // =========================
+    function statusFromVitals(v){
+        let score = 0;
+        if(v.spo2 < 92) score++;
+        if(v.hr > 120 || v.hr < 55) score++;
+        if(v.rr > 24 || v.rr < 10) score++;
+        if(v.temp > 38.5) score++;
+        if(v.bp[0] > 160 || v.bp[0] < 95) score++;
+        if(score >= 3) return {txt:"Critical", color:"#ef4444"};
+        if(score === 2) return {txt:"Warning", color:"#facc15"};
+        return {txt:"Stable", color:"#22c55e"};
+    }
+
+    function paintVitals(){
+        if(!live) return;
+        dHR.textContent   = Math.round(live.hr);
+        dRR.textContent   = Math.round(live.rr);
+        dSpO2.textContent = Math.round(live.spo2);
+        dBP.textContent   = `${Math.round(live.bpS)}/${Math.round(live.bpD)}`;
+        dTemp.textContent = live.temp.toFixed(1);
+
+        const st = statusFromVitals({
+            hr: Math.round(live.hr),
+            rr: Math.round(live.rr),
+            spo2: Math.round(live.spo2),
+            bp: [Math.round(live.bpS), Math.round(live.bpD)],
+            temp: live.temp
+        });
+        dStatus.textContent = st.txt;
+        dStatus.style.color = st.color;
+
+        heart.style.setProperty("--hr", Math.max(1, Math.round(live.hr)));
+        lungs.style.setProperty("--rr", Math.max(1, Math.round(live.rr)));
+    }
+
+    // called by Java OR by polling
+    function switchToVitalsFromJava(hr, rr, spo2, bpS, bpD, temp) {
+        if (!window.live) {
+            window.live = { hr, rr, spo2, bpS, bpD, temp };
+        } else {
+            live.hr = hr;
+            live.rr = rr;
+            live.spo2 = spo2;
+            live.bpS = bpS;
+            live.bpD = bpD;
+            live.temp = temp;
+        }
+        paintVitals();
+    }
+
+    // =========================
+    // 4) Poll single patient vitals
+    // =========================
+    async function pollFromServer() {
+        if(currentPatientId == null) return;
+
+        try {
+            const doctor = "demo"; // TODO: 之后从 Java 注入当前登录医生
+            const url = `../api/patient?id=${currentPatientId}&doctor=${encodeURIComponent(doctor)}`;
+            const res = await fetch(url, { cache: "no-store" });
+
+            if (!res.ok) {
+                dbg.textContent = `DB: fetch failed ${res.status}`;
+                return;
+            }
+
+            const data = await res.json();
+
+            // Your API example: {"id":1,"givenname":"Alice","familyname":"Smith","hr":110,"rr":0,"spo2":0,"sys":150,"dia":95,"temp":38.2}
+            const hr  = Number(data.hr ?? data.heartrate ?? data.heartRate ?? 0) || 0;
+            const sys = Number(data.sys ?? 0) || 0;
+            const dia = Number(data.dia ?? 0) || 0;
+            const temp= Number(data.temp ?? data.temperature ?? 0) || 0;
+
+            // rr/spo2 might be missing -> keep defaults
+            const rr   = Number(data.rr ?? 0) || (live?.rr ?? 12);
+            const spo2 = Number(data.spo2 ?? 0) || (live?.spo2 ?? 98);
+
+            dbg.textContent = `DB OK: id=${currentPatientId} hr=${hr} bp=${sys}/${dia} temp=${temp}`;
+
+            switchToVitalsFromJava(hr, rr, spo2, sys, dia, temp);
+
+        } catch (e) {
+            dbg.textContent = "DB: exception (see console)";
+            console.log("pollFromServer error:", e);
+        }
+    }
+
+    // =========================
+    // 5) Dropdown + Java bridge
+    // =========================
+    function switchPatientById(id){
+        currentPatientId = Number(id);
+        renderLeftPanelForCurrent();
+        renderNotes();
+        pollFromServer();
+    }
+
+    // Called by Java: digitalTwinPanel.setSelectedPatientId(...)
+    window.setSelectedPatientIdFromJava = function(patientId){
+        if(patientId == null) return;
+        currentPatientId = Number(patientId);
+        sel.value = String(currentPatientId);
+        switchPatientById(currentPatientId);
+    }
+
+    sel.addEventListener("change", ()=>{
+        switchPatientById(sel.value);
+    });
+
+    // =========================
+    // 6) ECG/Resp waves (still synthetic visuals)
+    // =========================
+    function ecgSample(x){
+        // simple generic waveform, amplitude mildly tied to HR
+        const amp = 28 + (live ? (Math.min(140,live.hr) - 60)/10 : 0);
+        const sharp = 24;
+        const qrs = Math.exp(-Math.pow(x-30,2)/sharp) * amp;
+        const s   = -Math.exp(-Math.pow(x-36,2)/(sharp*1.4)) * (amp/3);
+        const pW  =  Math.exp(-Math.pow(x-18,2)/(sharp*3.0)) * (amp/8);
+        const tW  =  Math.exp(-Math.pow(x-55,2)/(sharp*2.5)) * (amp/6);
+        const noise = (Math.random()-.5) * 1.5;
+        return qrs + s + pW + tW + noise;
+    }
+
+    setInterval(()=>{
+        let d="M0 50 ";
+        for(let x=0;x<300;x++){
+            d += `L${x} ${50-ecgSample((x+ecgP)%80)}`;
+        }
+        ecg.innerHTML = `<path d="${d}" stroke="#38bdf8" stroke-width="2" fill="none" />`;
+        const useHR = live ? live.hr : 80;
+        ecgP += useHR/25;
+    },40);
+
+    setInterval(()=>{
+        let d="M0 50 ";
+        const amp = 18;
+        const sm  = 0.04;
+        for(let x=0;x<300;x++){
+            d += `L${x} ${50 + Math.sin((x+respP)*sm) * amp}`;
+        }
+        resp.innerHTML = `<path d="${d}" stroke="#22c55e" stroke-width="2" fill="none" />`;
+        const useRR = live ? live.rr : 16;
+        respP += useRR/8;
+    },80);
+
+    // =========================
+    // 7) Boot
+    // =========================
+    (async function init(){
+        try{
+            patients = await fetchPatientsList();
+            populateDropdown();
+            renderLeftPanelForCurrent();
+            renderNotes();
+
+            // start polling
+            pollFromServer();
+            setInterval(pollFromServer, 1000);
+
+            dbg.textContent = "DB: ready";
+
+        }catch(e){
+            dbg.textContent = "DB: failed to load list";
+            console.log(e);
+        }
+    })();
+</script>
+
+</body>
+</html>
