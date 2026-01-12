@@ -9,6 +9,8 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DatabaseConnection {
 
@@ -23,15 +25,6 @@ public class DatabaseConnection {
     private static final boolean ALLOW_LOCAL_FALLBACK =
             System.getenv("TSURU_APPNAME") == null || "true".equalsIgnoreCase(System.getenv("ALLOW_LOCAL_FALLBACK"));
 
-    /**
-     * Tsuru / cloud: use env vars.
-     *
-     * Prefer:
-     *   1) DATABASE_URL  (e.g. postgres://user:pass@host:port/db?sslmode=require)
-     *
-     * Fallback:
-     *   2) PGHOST / PGPORT / PGDATABASE / PGUSER / PGPASSWORD
-     */
     public static Connection getConnection() {
         debugPrintEnvOnce();
         DbInfo info = resolveDbInfoFromEnv();
@@ -260,6 +253,10 @@ public class DatabaseConnection {
      * Works across multiple common service formats by scanning for substrings.
      */
     private static String extractPostgresUrlFromTsuruServices(String json) {
+        // 0) First: regex scan anywhere in TSURU_SERVICES for a Postgres URL (works even if JSON keys differ)
+        String hit = findFirstPostgresLikeUrl(json);
+        if (isNonBlank(hit)) return hit;
+
         // Common keys in various platforms: uri, url, connection_uri, connection_string
         String[] keys = new String[] {"connection_uri", "connection_string", "uri", "url", "dsn"};
         for (String k : keys) {
@@ -268,10 +265,6 @@ public class DatabaseConnection {
                 return v;
             }
         }
-
-        // If no key-based hit, scan raw for a postgres-like URL
-        String rawHit = findFirstPostgresLikeUrl(json);
-        if (isNonBlank(rawHit)) return rawHit;
 
         // Otherwise, attempt host/port/db/user/pass style (some TSURU_SERVICES include these fields)
         String host = extractJsonStringValue(json, "host");
