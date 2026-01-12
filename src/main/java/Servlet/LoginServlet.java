@@ -55,14 +55,14 @@ public class LoginServlet extends HttpServlet {
 
         Doctor d = DoctorDAO.findByEmail(loginReq.email);
         if (d == null) {
-            out.println(gson.toJson(new LoginResponse("error", "Invalid credentials")));
+            out.println(gson.toJson(new LoginResponse("error", "Email not found")));
             return;
         }
 
         // same simple hash as in RegisterServlet
         String passwordHash = Integer.toHexString(loginReq.password.hashCode());
         if (!passwordHash.equals(d.getPasswordHash())) {
-            out.println(gson.toJson(new LoginResponse("error", "Invalid credentials")));
+            out.println(gson.toJson(new LoginResponse("error", "Wrong password")));
             return;
         }
 
