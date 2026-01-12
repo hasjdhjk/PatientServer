@@ -7,14 +7,17 @@ import java.sql.SQLException;
 public class DatabaseConnection {
 
     // 你现在的 DB 是本机 postgres 数据库
-    private static final String URL  = "jdbc:postgresql://localhost:5432/postgres";
+//    private static final String URL  = "jdbc:postgresql://localhost:5432/postgres";
+    private static final String URL  = "https://bioeng-fguys-app.impaas.uk";
 
     // 你 psql 里 current_user() = apple，所以这里用 apple
-    private static final String USER = "apple";
+    private static final String USER = "postgres";
+//    private static final String USER = "apple";
 
     // 如果你没有给 apple 设置密码（brew 默认本机可能免密），就留空字符串。
     // 如果你有密码，就填进去。
-    private static final String PASS = "";
+    private static final String PASS = "h7182005H123";
+//    private static final String PASS = "";
 
     public static Connection getConnection() {
         try {
