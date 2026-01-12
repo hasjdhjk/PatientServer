@@ -13,8 +13,8 @@ import java.util.Map;
 public class DatabaseConnection {
 
     // 你现在的 DB 是本机 postgres 数据库
-//    private static final String LOCAL_URL  = "jdbc:postgresql://localhost:5432/postgres";
-    private static final String LOCAL_URL  = System.getenv("APP_BASE_URL");
+    private static final String LOCAL_URL  = "jdbc:postgresql://localhost:5432/postgres";
+//    private static final String LOCAL_URL  = System.getenv("APP_BASE_URL");
 
     // 你 psql 里 current_user() = apple，所以这里用 apple
     private static final String LOCAL_USER = "postgres";
