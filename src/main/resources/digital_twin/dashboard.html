@@ -259,9 +259,6 @@
         <div class="metric">
             <div class="title">Health Records</div>
             <div id="records" class="chips"></div>
-            <div style="opacity:.7;font-size:12px;margin-top:8px">
-                (If your DB doesn’t store records yet, this stays placeholder.)
-            </div>
         </div>
 
         <div class="metric">
@@ -454,9 +451,11 @@
        Age: ${escapeHtml(age)}<br>
        ID: ${escapeHtml(p?.id)}`;
 
-        // health records: if your DB doesn’t have it, show placeholder chips
-        const recs = Array.isArray(p?.records) ? p.records : [];
-        records.innerHTML = (recs.length ? recs : ["(no records in DB yet)"]).map(r=>{
+        // health records: revert to initial static demo records (not DB-backed)
+        const defaultRecs = ["Hypertension", "Type 2 Diabetes", "Allergy"];
+        const recs = (Array.isArray(p?.records) && p.records.length) ? p.records : defaultRecs;
+
+        records.innerHTML = recs.map(r=>{
             const t = String(r).toLowerCase();
             let cls = "other";
             if(t.includes("cardio") || t.includes("hyper") || t.includes("arrhy")) cls="card";
