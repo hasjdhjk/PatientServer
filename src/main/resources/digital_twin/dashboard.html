@@ -383,6 +383,13 @@
     const sel = document.getElementById("patientSelect");
     const dbg = document.getElementById("dbg");
 
+    // =========================
+    // Simulation mode (Java-driven)
+    // =========================
+    // When true, the dashboard will NOT poll the server DB and will only display
+    // values pushed from Java via window.switchToVitalsFromJava(...).
+    window.simMode = true;
+
     function escapeHtml(str){
         return String(str ?? "").replace(/[&<>"']/g, m => ({
             "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
@@ -564,8 +571,9 @@
 
     // called by Java OR by polling
     function switchToVitalsFromJava(hr, rr, spo2, bpS, bpD, temp) {
-        if (!window.live) {
-            window.live = { hr, rr, spo2, bpS, bpD, temp };
+        // Keep a single source of truth: the module-scoped `live` object.
+        if (!live) {
+            live = { hr, rr, spo2, bpS, bpD, temp };
         } else {
             live.hr = hr;
             live.rr = rr;
@@ -574,6 +582,10 @@
             live.bpD = bpD;
             live.temp = temp;
         }
+
+        // Expose for debugging / optional external access.
+        window.live = live;
+
         paintVitals();
     }
 
@@ -581,6 +593,11 @@
     // 4) Poll single patient vitals
     // =========================
     async function pollFromServer() {
+        // SIMULATION MODE: Java pushes vitals, skip DB completely
+        if (window.simMode === true) {
+            return;
+        }
+
         if(currentPatientId == null) return;
 
         try {
@@ -688,7 +705,7 @@
             pollFromServer();
             setInterval(pollFromServer, 1000);
 
-            dbg.textContent = "DB: ready";
+            dbg.textContent = window.simMode ? "SIM: Java simulator" : "DB: ready";
 
         }catch(e){
             dbg.textContent = "DB: failed to load list";
