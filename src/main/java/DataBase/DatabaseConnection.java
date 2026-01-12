@@ -12,177 +12,149 @@ import java.util.Map;
 
 public class DatabaseConnection {
 
-    // 你现在的 DB 是本机 postgres 数据库
-    private static final String LOCAL_URL  = "jdbc:postgresql://localhost:5432/postgres";
-//    private static final String LOCAL_URL  = System.getenv("APP_BASE_URL");
+    // ===== LOCAL DEV (ONLY USED IF ENABLED) =====
+    private static final boolean ALLOW_LOCAL_FALLBACK = false;
 
-    // 你 psql 里 current_user() = apple，所以这里用 apple
+    private static final String LOCAL_JDBC =
+            "jdbc:postgresql://localhost:5432/postgres";
     private static final String LOCAL_USER = "postgres";
-//    private static final String LOCAL_USER = "apple";
-
-    // 如果你没有给 apple 设置密码（brew 默认本机可能免密），就留空字符串。
-    // 如果你有密码，就填进去。
     private static final String LOCAL_PASS = "h7182005H123";
-//    private static final String LOCAL_PASS = "";
 
-    /**
-     * Tsuru / cloud: use env vars.
-     *
-     * Prefer:
-     *   1) DATABASE_URL  (e.g. postgres://user:pass@host:port/db?sslmode=require)
-     *
-     * Fallback:
-     *   2) PGHOST / PGPORT / PGDATABASE / PGUSER / PGPASSWORD
-     */
+    // ===== PUBLIC API =====
     public static Connection getConnection() {
         try {
             Class.forName("org.postgresql.Driver");
 
-            DbInfo info = resolveDbInfoFromEnv();
+            DbInfo info = resolveDbInfo();
 
-            Connection conn = DriverManager.getConnection(info.jdbcUrl, info.user, info.pass);
-            if (conn == null) throw new SQLException("DriverManager.getConnection returned null");
+            Connection conn = DriverManager.getConnection(
+                    info.jdbcUrl,
+                    info.user,
+                    info.pass
+            );
+
+            if (conn == null) {
+                throw new SQLException("DriverManager returned null connection");
+            }
+
             return conn;
 
         } catch (Exception e) {
-            // IMPORTANT: print env-based details without leaking password
-            throw new RuntimeException("DB connection failed: " + safeDebugInfo() + " msg=" + e.getMessage(), e);
+            throw new RuntimeException(
+                    "Database connection failed: " + debugInfo(),
+                    e
+            );
         }
     }
 
-    // ======================= ENV RESOLUTION =======================
+    // ===== DB RESOLUTION =====
+    private static DbInfo resolveDbInfo() {
 
-    private static DbInfo resolveDbInfoFromEnv() {
-        String databaseUrl = getenvAny("DATABASE_URL", "TSURU_DATABASE_URL"); // second key just in case
-
-        if (databaseUrl != null && !databaseUrl.isBlank()) {
-            return fromDatabaseUrl(databaseUrl.trim());
+        // Preferred: DATABASE_URL (most cloud platforms)
+        String databaseUrl = getenv("DATABASE_URL");
+        if (databaseUrl != null) {
+            return fromDatabaseUrl(databaseUrl);
         }
 
-        // Fallback to PG* vars (common in many platforms)
-        String host = System.getenv("PGHOST");
-        String port = System.getenv("PGPORT");
-        String db   = System.getenv("PGDATABASE");
-        String user = System.getenv("PGUSER");
-        String pass = System.getenv("PGPASSWORD");
+        // Fallback: PG* variables
+        String host = getenv("PGHOST");
+        String port = getenv("PGPORT");
+        String db   = getenv("PGDATABASE");
+        String user = getenv("PGUSER");
+        String pass = getenv("PGPASSWORD");
 
-        if (isNonBlank(host) && isNonBlank(port) && isNonBlank(db) && isNonBlank(user)) {
-            // add sslmode=require for cloud safety (harmless locally if ignored)
-            String jdbc = "jdbc:postgresql://" + host + ":" + port + "/" + db + "?sslmode=require";
+        if (host != null && port != null && db != null && user != null) {
+            String jdbc =
+                    "jdbc:postgresql://" + host + ":" + port + "/" + db +
+                            "?sslmode=require";
+
             return new DbInfo(jdbc, user, pass == null ? "" : pass);
         }
 
-        // Local fallback
-        return new DbInfo(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
-    }
-
-    /**
-     * Parse DATABASE_URL formats like:
-     *   postgres://user:pass@host:5432/dbname
-     *   postgresql://user:pass@host:5432/dbname?sslmode=require
-     *   jdbc:postgresql://host:5432/dbname?user=...&password=...
-     */
-    private static DbInfo fromDatabaseUrl(String raw) {
-        // If already a JDBC url
-        if (raw.startsWith("jdbc:postgresql://")) {
-            // Some platforms include user/pass as query params, others don't.
-            // We'll keep it as jdbcUrl and still try to extract user/pass if possible.
-            Map<String, String> q = parseQuery(raw.contains("?") ? raw.substring(raw.indexOf('?') + 1) : "");
-            String user = q.getOrDefault("user", q.getOrDefault("username", ""));
-            String pass = q.getOrDefault("password", "");
-            // If user missing, fallback to PGUSER/PGPASSWORD if present
-            if (!isNonBlank(user)) user = getenvAny("PGUSER");
-            if (!isNonBlank(pass)) pass = getenvAny("PGPASSWORD");
-            return new DbInfo(raw, user == null ? "" : user, pass == null ? "" : pass);
+        // Local dev ONLY if explicitly allowed
+        if (ALLOW_LOCAL_FALLBACK) {
+            return new DbInfo(LOCAL_JDBC, LOCAL_USER, LOCAL_PASS);
         }
 
-        // Normalize scheme postgres:// or postgresql://
-        String normalized = raw.replaceFirst("^postgres://", "postgresql://");
+        // Cloud must fail fast
+        throw new RuntimeException(
+                "No database environment variables found"
+        );
+    }
 
+    // ===== DATABASE_URL PARSER =====
+    private static DbInfo fromDatabaseUrl(String raw) {
         try {
+            if (raw.startsWith("jdbc:postgresql://")) {
+                return new DbInfo(raw, "", "");
+            }
+
+            String normalized =
+                    raw.replaceFirst("^postgres://", "postgresql://");
+
             URI uri = new URI(normalized);
 
-            String userInfo = uri.getUserInfo(); // "user:pass"
             String user = "";
             String pass = "";
 
-            if (userInfo != null) {
-                String[] parts = userInfo.split(":", 2);
-                user = urlDecode(parts[0]);
-                if (parts.length > 1) pass = urlDecode(parts[1]);
+            if (uri.getUserInfo() != null) {
+                String[] parts = uri.getUserInfo().split(":", 2);
+                user = decode(parts[0]);
+                if (parts.length > 1) {
+                    pass = decode(parts[1]);
+                }
             }
 
             String host = uri.getHost();
             int port = uri.getPort() == -1 ? 5432 : uri.getPort();
-
-            String path = uri.getPath(); // "/dbname"
-            String db = (path != null && path.startsWith("/")) ? path.substring(1) : path;
+            String db = uri.getPath().substring(1);
 
             Map<String, String> q = parseQuery(uri.getQuery());
-            String sslmode = q.getOrDefault("sslmode", "require"); // cloud default
+            String ssl = q.getOrDefault("sslmode", "require");
 
-            // Build JDBC
-            String jdbc = "jdbc:postgresql://" + host + ":" + port + "/" + db + "?sslmode=" + sslmode;
+            String jdbc =
+                    "jdbc:postgresql://" + host + ":" + port + "/" + db +
+                            "?sslmode=" + ssl;
 
-            // Some platforms put user/pass in query too
-            if (!isNonBlank(user)) user = q.getOrDefault("user", q.getOrDefault("username", user));
-            if (!isNonBlank(pass)) pass = q.getOrDefault("password", pass);
+            if (user.isEmpty()) user = q.getOrDefault("user", "");
+            if (pass.isEmpty()) pass = q.getOrDefault("password", "");
 
             return new DbInfo(jdbc, user, pass);
 
         } catch (URISyntaxException e) {
-            // If parsing fails, last resort: local fallback
-            return new DbInfo(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
+            throw new RuntimeException("Invalid DATABASE_URL format", e);
         }
     }
 
-    // ======================= HELPERS =======================
-
-    private static String getenvAny(String... keys) {
-        for (String k : keys) {
-            String v = System.getenv(k);
-            if (v != null && !v.isBlank()) return v;
-        }
-        return null;
+    // ===== HELPERS =====
+    private static String getenv(String key) {
+        String v = System.getenv(key);
+        return (v == null || v.isBlank()) ? null : v;
     }
 
-    private static boolean isNonBlank(String s) {
-        return s != null && !s.isBlank();
-    }
-
-    private static String urlDecode(String s) {
+    private static String decode(String s) {
         return URLDecoder.decode(s, StandardCharsets.UTF_8);
     }
 
-    private static Map<String, String> parseQuery(String query) {
+    private static Map<String, String> parseQuery(String q) {
         Map<String, String> map = new HashMap<>();
-        if (query == null || query.isBlank()) return map;
+        if (q == null || q.isBlank()) return map;
 
-        String[] pairs = query.split("&");
-        for (String p : pairs) {
+        for (String p : q.split("&")) {
             String[] kv = p.split("=", 2);
-            String k = urlDecode(kv[0]);
-            String v = kv.length > 1 ? urlDecode(kv[1]) : "";
-            map.put(k, v);
+            map.put(decode(kv[0]), kv.length > 1 ? decode(kv[1]) : "");
         }
         return map;
     }
 
-    private static String safeDebugInfo() {
-        // don’t print passwords
-        String databaseUrl = getenvAny("DATABASE_URL", "TSURU_DATABASE_URL");
-        if (databaseUrl != null) {
-            return "using DATABASE_URL (redacted)";
-        }
-        String host = System.getenv("PGHOST");
-        String db = System.getenv("PGDATABASE");
-        String user = System.getenv("PGUSER");
-        if (host != null || db != null || user != null) {
-            return "using PG* env host=" + host + " db=" + db + " user=" + user;
-        }
-        return "using LOCAL url=" + LOCAL_URL + " user=" + LOCAL_USER;
+    private static String debugInfo() {
+        if (getenv("DATABASE_URL") != null) return "DATABASE_URL detected";
+        if (getenv("PGHOST") != null) return "PG* variables detected";
+        if (ALLOW_LOCAL_FALLBACK) return "local fallback enabled";
+        return "no database configuration found";
     }
 
+    // ===== INTERNAL DTO =====
     private static class DbInfo {
         final String jdbcUrl;
         final String user;
