@@ -8,7 +8,7 @@ public class DatabaseConnection {
 
     // 你现在的 DB 是本机 postgres 数据库
 //    private static final String URL  = "jdbc:postgresql://localhost:5432/postgres";
-    private static final String URL  = "https://bioeng-fguys-app.impaas.uk";
+    private static final String URL  = System.getenv("APP_BASE_URL");
 
     // 你 psql 里 current_user() = apple，所以这里用 apple
     private static final String USER = "postgres";
