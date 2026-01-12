@@ -12,18 +12,21 @@ import java.util.Map;
 
 public class DatabaseConnection {
 
-    // 你现在的 DB 是本机 postgres 数据库
-    private static final String LOCAL_URL  = "jdbc:postgresql://localhost:5432/postgres";
-//    private static final String LOCAL_URL  = System.getenv("APP_BASE_URL");
+    // Local development defaults (Mac/laptop)
+    // You can override these with env vars if you want.
+    private static final String LOCAL_URL  = getenvAny("LOCAL_DATABASE_URL", "JDBC_DATABASE_URL", "PGJDBC_URL") != null
+            ? getenvAny("LOCAL_DATABASE_URL", "JDBC_DATABASE_URL", "PGJDBC_URL")
+            : "jdbc:postgresql://localhost:5432/postgres";
 
-    // 你 psql 里 current_user() = apple，所以这里用 apple
-    private static final String LOCAL_USER = "postgres";
-//    private static final String LOCAL_USER = "apple";
+    // By default, local Postgres usually uses the "postgres" role.
+    // Override with env LOCAL_DB_USER / LOCAL_DB_PASSWORD if your machine differs.
+    private static final String LOCAL_USER = getenvAny("LOCAL_DB_USER") != null
+            ? getenvAny("LOCAL_DB_USER")
+            : "apple";
 
-    // 如果你没有给 apple 设置密码（brew 默认本机可能免密），就留空字符串。
-    // 如果你有密码，就填进去。
-    private static final String LOCAL_PASS = "h7182005H123";
-//    private static final String LOCAL_PASS = "";
+    private static final String LOCAL_PASS = getenvAny("LOCAL_DB_PASSWORD") != null
+            ? getenvAny("LOCAL_DB_PASSWORD")
+            : "";
 
     /**
      * Tsuru / cloud: use env vars.
@@ -37,9 +40,7 @@ public class DatabaseConnection {
     public static Connection getConnection() {
         try {
             Class.forName("org.postgresql.Driver");
-
-            DbInfo info = resolveDbInfoFromEnv();
-
+            DbInfo info = hasCloudDbEnv() ? resolveDbInfoFromEnv() : new DbInfo(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
             Connection conn = DriverManager.getConnection(info.jdbcUrl, info.user, info.pass);
             if (conn == null) throw new SQLException("DriverManager.getConnection returned null");
             return conn;
@@ -51,6 +52,19 @@ public class DatabaseConnection {
     }
 
     // ======================= ENV RESOLUTION =======================
+
+    private static boolean hasCloudDbEnv() {
+        // Tsuru / cloud typically provides DATABASE_URL or PG* variables
+        String databaseUrl = getenvAny("DATABASE_URL", "TSURU_DATABASE_URL");
+        if (isNonBlank(databaseUrl)) return true;
+
+        String host = System.getenv("PGHOST");
+        String port = System.getenv("PGPORT");
+        String db   = System.getenv("PGDATABASE");
+        String user = System.getenv("PGUSER");
+        // pass may be blank in some setups
+        return isNonBlank(host) && isNonBlank(port) && isNonBlank(db) && isNonBlank(user);
+    }
 
     private static DbInfo resolveDbInfoFromEnv() {
         String databaseUrl = getenvAny("DATABASE_URL", "TSURU_DATABASE_URL"); // second key just in case
@@ -72,12 +86,8 @@ public class DatabaseConnection {
             return new DbInfo(jdbc, user, pass == null ? "" : pass);
         }
 
-        // Local fallback
-        throw new RuntimeException(
-                "No database environment variables found. " +
-                        "DATABASE_URL or PG* must be set on Tsuru."
-        );
-
+        // Local fallback (when running on your laptop)
+        return new DbInfo(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
     }
 
     /**
