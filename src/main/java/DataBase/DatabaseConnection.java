@@ -73,7 +73,11 @@ public class DatabaseConnection {
         }
 
         // Local fallback
-        return new DbInfo(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
+        throw new RuntimeException(
+                "No database environment variables found. " +
+                        "DATABASE_URL or PG* must be set on Tsuru."
+        );
+
     }
 
     /**
