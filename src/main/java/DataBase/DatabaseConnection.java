@@ -38,7 +38,8 @@ public class DatabaseConnection {
 
         // 👇 只会在 Tsuru 打印一次日志
         debugPrintEnvOnce();
-
+        System.out.println("========== TSURU ENV DEBUG ==========");
+        System.out.println(System.getenv("TSURU_SERVICES"));
         DbInfo info = resolveDbInfoFromEnv();
 
         try {
