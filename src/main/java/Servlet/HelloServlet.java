@@ -13,7 +13,12 @@ public class HelloServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
 
+        String host = System.getenv("PGHOST");
+        String port = System.getenv("PGPORT");
+        String db   = System.getenv("PGDATABASE");
+        String user = System.getenv("PGUSER");
+
         resp.setContentType("text/plain");
-        resp.getWriter().write("Hi! Server is running on Tsuru!");
+        resp.getWriter().write(host + port + db + user);
     }
 }
