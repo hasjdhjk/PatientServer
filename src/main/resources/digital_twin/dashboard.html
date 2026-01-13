@@ -387,6 +387,23 @@
     // values pushed from Java via window.switchToVitalsFromJava(...).
     window.simMode = true;
 
+    // Doctor + API base context (injected by Java DigitalTwinPanel)
+    // Java should set:
+    //   window.__doctor = "<logged-in doctor>";
+    //   window.__apiBase = "https://bioeng-bbb-app.impaas.uk";
+    function getDoctor(){
+        return String(window.__doctor || window.doctor || "demo");
+    }
+    function getApiBase(){
+        // If not injected, fall back to relative (works when served under /digital_twin/)
+        return String(window.__apiBase || "").trim();
+    }
+    function apiUrl(path){
+        const base = getApiBase().replace(/\/$/, "");
+        if(!path.startsWith("/")) path = "/" + path;
+        return base ? (base + path) : (".." + path);
+    }
+
     function escapeHtml(str){
         return String(str ?? "").replace(/[&<>"']/g, m => ({
             "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
@@ -412,8 +429,8 @@
     }
 
     async function fetchPatientsList(){
-        const doctor = "demo"; // TODO: replace with logged-in doctor username
-        const url = `../api/patients?doctor=${encodeURIComponent(doctor)}`;
+        const doctor = getDoctor();
+        const url = apiUrl(`/api/patients?doctor=${encodeURIComponent(doctor)}`);
         const res = await fetch(url, { cache: "no-store" });
         if(!res.ok) throw new Error(`patients list failed ${res.status}`);
         const arr = await res.json();
@@ -600,8 +617,8 @@
         if(currentPatientId == null) return;
 
         try {
-            const doctor = "demo"; // TODO: 之后从 Java 注入当前登录医生
-            const url = `../api/patient?id=${currentPatientId}&doctor=${encodeURIComponent(doctor)}`;
+            const doctor = getDoctor();
+            const url = apiUrl(`/api/patient?id=${currentPatientId}&doctor=${encodeURIComponent(doctor)}`);
             const res = await fetch(url, { cache: "no-store" });
 
             if (!res.ok) {
@@ -704,10 +721,13 @@
             pollFromServer();
             setInterval(pollFromServer, 1000);
 
-            dbg.textContent = window.simMode ? "SIM: Java simulator" : "DB: ready";
+            const doc = getDoctor();
+            const base = getApiBase();
+            const baseTag = base ? ` base=${base}` : "";
+            dbg.textContent = window.simMode ? `SIM: Java simulator (doctor=${doc})${baseTag}` : `DB: ready (doctor=${doc})${baseTag}`;
 
         }catch(e){
-            dbg.textContent = "DB: failed to load list";
+            dbg.textContent = `DB: failed to load list (doctor=${getDoctor()})`;
             console.log(e);
         }
     })();
