@@ -28,7 +28,7 @@ public class SchemaInit {
                             "  givenname TEXT NOT NULL," +
                             "  familyname TEXT NOT NULL," +
                             "  password_hash TEXT NOT NULL," +
-                            "  verified BOOLEAN NOT NULL DEFAULT FALSE," +
+                            "  verified BOOLEAN NOT NULL DEFAULT TRUE," +
                             "  verification_token TEXT," +
                             "  reset_token TEXT," +
                             "  reset_token_expires TIMESTAMP" +
