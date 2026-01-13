@@ -21,6 +21,21 @@ public class SchemaInit {
                             ")"
             );
 
+            st.execute(
+                    "CREATE TABLE IF NOT EXISTS doctors (" +
+                            "  id SERIAL PRIMARY KEY," +
+                            "  email TEXT UNIQUE NOT NULL," +
+                            "  givenname TEXT NOT NULL," +
+                            "  familyname TEXT NOT NULL," +
+                            "  password_hash TEXT NOT NULL," +
+                            "  verified BOOLEAN NOT NULL DEFAULT FALSE," +
+                            "  verification_token TEXT," +
+                            "  reset_token TEXT," +
+                            "  reset_token_expires TIMESTAMP" +
+                            ")"
+            );
+
+
             // 2) Migrate old table (if it already existed without doctor column)
             st.execute("ALTER TABLE patients ADD COLUMN IF NOT EXISTS doctor TEXT NOT NULL DEFAULT 'demo'");
 
