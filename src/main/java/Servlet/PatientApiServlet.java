@@ -94,16 +94,17 @@ public class PatientApiServlet extends HttpServlet {
             JsonObject in = new JsonParser().parse(body).getAsJsonObject();
 
             String doctor = getStr(in, "doctor");
+            if (doctor == null || doctor.isBlank()) doctor = "demo";
             String givenname = getStr(in, "givenname");
             String familyname = getStr(in, "familyname");
             String gender = getStr(in, "gender");
             int age = getInt(in, "age");
             String bp = getStr(in, "bp");
 
-            if (doctor == null || givenname == null || familyname == null || bp == null
-                    || gender == null || age <= 0) {
+            if (givenname == null || familyname == null || bp == null || gender == null
+                    || age < 0 || age > 130) {
                 resp.setStatus(400);
-                resp.getWriter().write("{\"ok\":false,\"error\":\"Missing/invalid fields. Expect doctor,givenname,familyname,heartrate,temperature,bp\"}");
+                resp.getWriter().write("{\"ok\":false,\"error\":\"Missing/invalid fields. Expect doctor,givenname,familyname,gender,age,bp\"}");
                 return;
             }
 
