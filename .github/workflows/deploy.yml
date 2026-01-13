@@ -53,4 +53,4 @@ jobs:
         env:
           TSURU_TOKEN: ${{ secrets.TSURU_TOKEN }}
         run: |
-          tsuru app-deploy -a bioeng-fguys-app ROOT.war
+          tsuru app-deploy -a bioeng-bbb-app ROOT.war

@@ -5,7 +5,7 @@ import javax.servlet.http.*;
 import java.io.IOException;
 
 // only for testing, it says hello
-// https://bioeng-fguys-app.impaas.uk/hello
+// https://bioeng-bbb-app.impaas.uk/hello
 @WebServlet(urlPatterns = {"/hello"})
 public class HelloServlet extends HttpServlet {
 
