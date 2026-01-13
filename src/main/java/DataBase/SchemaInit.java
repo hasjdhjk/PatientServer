@@ -35,17 +35,27 @@ public class SchemaInit {
                             ")"
             );
 
-            // --- Migrate old doctors table column names (givenname/familyname -> given_name/family_name) ---
+            // --- Doctors schema migration (Step 1-3): normalize to given_name/family_name ---
+            // 1) Ensure new snake_case columns exist
             st.execute("ALTER TABLE doctors ADD COLUMN IF NOT EXISTS given_name TEXT");
             st.execute("ALTER TABLE doctors ADD COLUMN IF NOT EXISTS family_name TEXT");
 
-            // Copy data from legacy columns if present
-            st.execute("UPDATE doctors SET given_name = givenname WHERE given_name IS NULL AND givenname IS NOT NULL");
-            st.execute("UPDATE doctors SET family_name = familyname WHERE family_name IS NULL AND familyname IS NOT NULL");
+            // 2) Backfill from legacy columns if they exist (givenname/familyname)
+            // These UPDATEs will fail if legacy columns don't exist, so we guard them.
+            try {
+                st.execute("UPDATE doctors SET given_name = givenname WHERE given_name IS NULL AND givenname IS NOT NULL");
+            } catch (Exception ignored) {}
+            try {
+                st.execute("UPDATE doctors SET family_name = familyname WHERE family_name IS NULL AND familyname IS NOT NULL");
+            } catch (Exception ignored) {}
 
-            // Enforce NOT NULL if possible (will succeed once data is populated)
+            // 3) Enforce NOT NULL on new columns (after backfill)
             st.execute("ALTER TABLE doctors ALTER COLUMN given_name SET NOT NULL");
             st.execute("ALTER TABLE doctors ALTER COLUMN family_name SET NOT NULL");
+
+            // 3b) Drop NOT NULL on legacy columns so new-code inserts (snake_case only) won't fail
+            try { st.execute("ALTER TABLE doctors ALTER COLUMN givenname DROP NOT NULL"); } catch (Exception ignored) {}
+            try { st.execute("ALTER TABLE doctors ALTER COLUMN familyname DROP NOT NULL"); } catch (Exception ignored) {}
 
             // Optional index
             st.execute("CREATE INDEX IF NOT EXISTS idx_doctors_email ON doctors(email)");

@@ -20,10 +20,12 @@ public class DoctorDAO {
             if (rs.next()) {
                 return mapRow(rs);
             }
-        } catch (Exception e) { e.printStackTrace(); }
-        return null;
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException("findByEmail failed: " + e.getMessage(), e);
+        }
     }
- 
+
     public static Doctor findByVerificationToken(String token) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT * FROM doctors WHERE verification_token = ?";
@@ -34,8 +36,10 @@ public class DoctorDAO {
             if (rs.next()) {
                 return mapRow(rs);
             }
-        } catch (Exception e) { e.printStackTrace(); }
-        return null;
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException("findByVerificationToken failed: " + e.getMessage(), e);
+        }
     }
 
     public static Doctor findByResetToken(String token) {
@@ -49,8 +53,10 @@ public class DoctorDAO {
             if (rs.next()) {
                 return mapRow(rs);
             }
-        } catch (Exception e) { e.printStackTrace(); }
-        return null;
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException("findByResetToken failed: " + e.getMessage(), e);
+        }
     }
 
     public static int insertDoctor(String email, String givenName,
