@@ -25,16 +25,30 @@ public class SchemaInit {
                     "CREATE TABLE IF NOT EXISTS doctors (" +
                             "  id SERIAL PRIMARY KEY," +
                             "  email TEXT UNIQUE NOT NULL," +
-                            "  givenname TEXT NOT NULL," +
-                            "  familyname TEXT NOT NULL," +
+                            "  given_name TEXT NOT NULL," +
+                            "  family_name TEXT NOT NULL," +
                             "  password_hash TEXT NOT NULL," +
-                            "  verified BOOLEAN NOT NULL DEFAULT TRUE," +
+                            "  verified BOOLEAN NOT NULL DEFAULT FALSE," +
                             "  verification_token TEXT," +
                             "  reset_token TEXT," +
                             "  reset_token_expires TIMESTAMP" +
                             ")"
             );
 
+            // --- Migrate old doctors table column names (givenname/familyname -> given_name/family_name) ---
+            st.execute("ALTER TABLE doctors ADD COLUMN IF NOT EXISTS given_name TEXT");
+            st.execute("ALTER TABLE doctors ADD COLUMN IF NOT EXISTS family_name TEXT");
+
+            // Copy data from legacy columns if present
+            st.execute("UPDATE doctors SET given_name = givenname WHERE given_name IS NULL AND givenname IS NOT NULL");
+            st.execute("UPDATE doctors SET family_name = familyname WHERE family_name IS NULL AND familyname IS NOT NULL");
+
+            // Enforce NOT NULL if possible (will succeed once data is populated)
+            st.execute("ALTER TABLE doctors ALTER COLUMN given_name SET NOT NULL");
+            st.execute("ALTER TABLE doctors ALTER COLUMN family_name SET NOT NULL");
+
+            // Optional index
+            st.execute("CREATE INDEX IF NOT EXISTS idx_doctors_email ON doctors(email)");
 
             // 2) Migrate old table (if it already existed without doctor column)
             st.execute("ALTER TABLE patients ADD COLUMN IF NOT EXISTS doctor TEXT NOT NULL DEFAULT 'demo'");

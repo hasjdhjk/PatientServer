@@ -57,7 +57,7 @@ public class DoctorDAO {
                                   String familyName, String passwordHash,
                                   String verificationToken) {
         String sql = "INSERT INTO doctors " +
-                "(email, givenname, familyname, password_hash, verified, verification_token) " +
+                "(email, given_name, family_name, password_hash, verified, verification_token) " +
                 "VALUES (?,?,?,?,false,?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -122,8 +122,8 @@ public class DoctorDAO {
         Doctor d = new Doctor();
         d.setId(rs.getInt("id"));
         d.setEmail(rs.getString("email"));
-        d.setGivenName(rs.getString("givenname"));
-        d.setFamilyName(rs.getString("familyname"));
+        d.setGivenName(rs.getString("given_name"));
+        d.setFamilyName(rs.getString("family_name"));
         d.setPasswordHash(rs.getString("password_hash"));
         d.setVerified(rs.getBoolean("verified"));
         return d;
@@ -131,7 +131,7 @@ public class DoctorDAO {
     public static List<Doctor> getAllDoctors() {
         List<Doctor> list = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT id, email, givenname, familyname, verified FROM doctors ORDER BY id";
+            String sql = "SELECT id, email, given_name, family_name, verified FROM doctors ORDER BY id";
             PreparedStatement ps = conn.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
 
@@ -139,8 +139,8 @@ public class DoctorDAO {
                 Doctor d = new Doctor();
                 d.setId(rs.getInt("id"));
                 d.setEmail(rs.getString("email"));
-                d.setGivenName(rs.getString("givenname"));
-                d.setFamilyName(rs.getString("familyname"));
+                d.setGivenName(rs.getString("given_name"));
+                d.setFamilyName(rs.getString("family_name"));
                 d.setVerified(rs.getBoolean("verified"));
                 list.add(d);
             }
