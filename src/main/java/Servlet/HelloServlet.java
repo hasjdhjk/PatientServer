@@ -18,7 +18,13 @@ public class HelloServlet extends HttpServlet {
         String db   = System.getenv("PGDATABASE");
         String user = System.getenv("PGUSER");
 
+        String smtpHost = System.getenv("SMTP_HOST");
+        String smtpPort = System.getenv("SMTP_PORT");
+        String smtpUser = System.getenv("SMTP_USER");
+        String smtpPass = System.getenv("SMTP_PASS");
+
         resp.setContentType("text/plain");
-        resp.getWriter().write(host + port + db + user);
+//        resp.getWriter().write(host + port + db + user);
+        resp.getWriter().write(smtpHost + smtpPort + smtpUser + smtpPass);
     }
 }
