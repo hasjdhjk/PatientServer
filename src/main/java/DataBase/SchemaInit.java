@@ -12,7 +12,7 @@ public class SchemaInit {
             st.execute(
                     "CREATE TABLE IF NOT EXISTS patients (" +
                             "  id SERIAL PRIMARY KEY," +
-                            "  doctor TEXT NOT NULL DEFAULT 'demo'," +  
+                            "  doctor TEXT NOT NULL DEFAULT 'demo'," +
                             "  given_name TEXT NOT NULL," +
                             "  family_name TEXT NOT NULL," +
                             "  gender TEXT," +
