@@ -14,7 +14,7 @@ public class PatientDAO {
 
         String sql = "SELECT id, givenname, familyname, gender, age, bp " +
                 "FROM patients WHERE doctor = ? ORDER BY id";
-
+ 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
