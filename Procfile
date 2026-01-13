@@ -1,1 +1,1 @@
-web: bash -lc 'java $JAVA_OPTS -jar webapp-runner.jar --port ${PORT:-8080} build/libs/*.war'
+web: bash -lc 'java $JAVA_OPTS -jar webapp-runner.jar --port ${PORT} build/libs/*.war'
