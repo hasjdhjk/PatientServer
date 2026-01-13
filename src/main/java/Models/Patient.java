@@ -44,7 +44,7 @@ public class Patient {
     public void setBloodPressure(String bloodPressure) { this.bloodPressure = bloodPressure; }
     public void setSticky(boolean sticky) { this.sticky = sticky; }
 
-    @Override
+    @Override 
     public String toString() {
         return givenName + " " + familyName +
                 " (Gender: " + gender +
