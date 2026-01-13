@@ -24,6 +24,7 @@ public class VerifyEmailServlet extends HttpServlet {
         if (token == null || token.isEmpty()) {
             out.println("Invalid verification link.");
             return;
+            
         }
 
         Doctor d = DoctorDAO.findByVerificationToken(token);
