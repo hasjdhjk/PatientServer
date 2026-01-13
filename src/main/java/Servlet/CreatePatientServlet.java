@@ -27,8 +27,6 @@ public class CreatePatientServlet extends HttpServlet {
         try {
             String body = new String(req.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
-            // 兼容旧 gson：如果你 gson 版本旧，parseString 可能不存在
-            // 这里用 new JsonParser().parse(...) 的写法更兼容
             JsonObject in = new JsonParser().parse(body).getAsJsonObject();
 
             String doctor = in.has("doctor") ? in.get("doctor").getAsString() : "demo";

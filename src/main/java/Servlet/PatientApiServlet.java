@@ -61,13 +61,11 @@ public class PatientApiServlet extends HttpServlet {
             out.addProperty("givenname", p.getGivenName());
             out.addProperty("familyname", p.getFamilyName());
 
-            // dashboard 期望的字段（你 dashboard 之前用的是 hr/sys/dia/temp）
             out.addProperty("gender", p.getGender());
             out.addProperty("sys", sys);
             out.addProperty("dia", dia);
             out.addProperty("age", p.getAge());
 
-            // 你现在 DB 没 rr/spo2，就先给 0，让前端用默认值
             out.addProperty("rr", 0);
             out.addProperty("spo2", 0);
 
@@ -93,7 +91,6 @@ public class PatientApiServlet extends HttpServlet {
         String body = readBody(req);
 
         try {
-            // 兼容你 Gson 版本：不用 parseString
             JsonObject in = new JsonParser().parse(body).getAsJsonObject();
 
             String doctor = getStr(in, "doctor");
