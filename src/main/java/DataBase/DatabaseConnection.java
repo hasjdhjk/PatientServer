@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class DatabaseConnection {
 
-    // Local development defaults (Mac/laptop) 
+    // Local development defaults (Mac/laptop)
     // You can override these with env vars if you want.
     private static final String LOCAL_URL  = getenvAny("LOCAL_DATABASE_URL", "JDBC_DATABASE_URL", "PGJDBC_URL") != null
             ? getenvAny("LOCAL_DATABASE_URL", "JDBC_DATABASE_URL", "PGJDBC_URL")

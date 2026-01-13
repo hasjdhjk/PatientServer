@@ -5,7 +5,7 @@ on:
     branches:
       - main  # Trigger on push to the main branch. Change this as needed.
 
-jobs:
+jobs: 
   deploy:
     runs-on: ubuntu-latest
 
