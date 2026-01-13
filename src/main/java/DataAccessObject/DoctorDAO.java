@@ -5,6 +5,8 @@ import Models.Doctor;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DoctorDAO {
 
@@ -108,5 +110,26 @@ public class DoctorDAO {
         d.setVerified(rs.getBoolean("verified"));
         return d;
     }
+    public static List<Doctor> getAllDoctors() {
+        List<Doctor> list = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT id, email, givenname, familyname, verified FROM doctors ORDER BY id";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
 
+            while (rs.next()) {
+                Doctor d = new Doctor();
+                d.setId(rs.getInt("id"));
+                d.setEmail(rs.getString("email"));
+                d.setGivenName(rs.getString("givenname"));
+                d.setFamilyName(rs.getString("familyname"));
+                d.setVerified(rs.getBoolean("verified"));
+                list.add(d);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("getAllDoctors failed: " + e.getMessage());
+        }
+        return list;
+    }
 }
