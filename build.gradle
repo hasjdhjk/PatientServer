@@ -40,6 +40,26 @@ dependencies {
     implementation 'org.postgresql:postgresql:42.7.3'
 }
 
+tasks.register('downloadWebappRunner') {
+    doLast {
+        def f = file("$projectDir/webapp-runner.jar")
+        if (!f.exists()) {
+            def url = "https://repo1.maven.org/maven2/com/heroku/webapp-runner/9.0.96.0/webapp-runner-9.0.96.0.jar"
+            println "Downloading webapp-runner from: $url"
+            new URL(url).withInputStream { i ->
+                f.withOutputStream { it << i }
+            }
+            if (!f.exists() || f.length() == 0) {
+                throw new GradleException("webapp-runner.jar download failed (file missing/empty)")
+            }
+            println "Saved: ${f.absolutePath} (${f.length()} bytes)"
+        } else {
+            println "webapp-runner.jar already exists: ${f.absolutePath}"
+        }
+    }
+}
+tasks.named('stage') { dependsOn 'downloadWebappRunner' }
+
 test {
     useJUnitPlatform()
 }
