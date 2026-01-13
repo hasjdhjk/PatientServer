@@ -62,10 +62,10 @@ public class PatientApiServlet extends HttpServlet {
             out.addProperty("familyname", p.getFamilyName());
 
             // dashboard 期望的字段（你 dashboard 之前用的是 hr/sys/dia/temp）
-            out.addProperty("hr", p.getHeartRate());
+            out.addProperty("gender", p.getGender());
             out.addProperty("sys", sys);
             out.addProperty("dia", dia);
-            out.addProperty("temp", p.getTemperature());
+            out.addProperty("age", p.getAge());
 
             // 你现在 DB 没 rr/spo2，就先给 0，让前端用默认值
             out.addProperty("rr", 0);
@@ -99,18 +99,18 @@ public class PatientApiServlet extends HttpServlet {
             String doctor = getStr(in, "doctor");
             String givenname = getStr(in, "givenname");
             String familyname = getStr(in, "familyname");
-            int heartrate = getInt(in, "heartrate");
-            double temperature = getDouble(in, "temperature");
+            String gender = getStr(in, "gender");
+            int age = getInt(in, "age");
             String bp = getStr(in, "bp");
 
             if (doctor == null || givenname == null || familyname == null || bp == null
-                    || heartrate <= 0 || temperature <= 0) {
+                    || gender == null || age <= 0) {
                 resp.setStatus(400);
                 resp.getWriter().write("{\"ok\":false,\"error\":\"Missing/invalid fields. Expect doctor,givenname,familyname,heartrate,temperature,bp\"}");
                 return;
             }
 
-            Patient p = new Patient(0, givenname, familyname, heartrate, temperature, bp);
+            Patient p = new Patient(0, givenname, familyname, gender, age, bp);
 
             int newId = PatientDAO.insertPatientForDoctor(doctor, p);
             if (newId <= 0) {

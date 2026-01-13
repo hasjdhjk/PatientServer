@@ -34,11 +34,18 @@ public class CreatePatientServlet extends HttpServlet {
             String doctor = in.has("doctor") ? in.get("doctor").getAsString() : "demo";
             String given = in.get("givenname").getAsString();
             String family = in.get("familyname").getAsString();
-            int hr = in.get("heartrate").getAsInt();
-            double temp = in.get("temperature").getAsDouble();
+            String gender = in.get("gender").getAsString();
+            int age = in.get("age").getAsInt();
             String bp = in.get("bp").getAsString();
 
-            Patient p = new Patient(0, given, family, hr, temp, bp);
+            Patient p = new Patient(
+                    0,
+                    given,
+                    family,
+                    gender,
+                    age,
+                    bp
+            );
 
             int id = PatientDAO.insertPatientForDoctor(doctor, p);
 

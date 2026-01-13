@@ -12,7 +12,7 @@ public class PatientDAO {
     public static List<Patient> getPatientsForDoctor(String doctor) {
         List<Patient> patients = new ArrayList<>();
 
-        String sql = "SELECT id, givenname, familyname, heartrate, temperature, bp " +
+        String sql = "SELECT id, givenname, familyname, gender, age, bp " +
                 "FROM patients WHERE doctor = ? ORDER BY id";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -26,8 +26,8 @@ public class PatientDAO {
                             rs.getInt("id"),
                             rs.getString("givenname"),
                             rs.getString("familyname"),
-                            rs.getInt("heartrate"),
-                            rs.getDouble("temperature"),
+                            rs.getString("gender"),
+                            rs.getInt("age"),
                             rs.getString("bp")
                     );
                     patients.add(p);
@@ -42,7 +42,7 @@ public class PatientDAO {
     }
 
     public static Patient getPatientByIdForDoctor(String doctor, int id) {
-        String sql = "SELECT id, givenname, familyname, heartrate, temperature, bp " +
+        String sql = "SELECT id, givenname, familyname, gender, age, bp " +
                 "FROM patients WHERE doctor = ? AND id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -58,8 +58,8 @@ public class PatientDAO {
                         rs.getInt("id"),
                         rs.getString("givenname"),
                         rs.getString("familyname"),
-                        rs.getInt("heartrate"),
-                        rs.getDouble("temperature"),
+                        rs.getString("gender"),
+                        rs.getInt("age"),
                         rs.getString("bp")
                 );
             }
@@ -73,7 +73,7 @@ public class PatientDAO {
      * Insert patient for doctor, return new id (DB generated).
      */
     public static int insertPatientForDoctor(String doctor, Patient p) throws SQLException {
-        String sql = "INSERT INTO patients (doctor, givenname, familyname, heartrate, temperature, bp) " +
+        String sql = "INSERT INTO patients (doctor, givenname, familyname, gender, age, bp) " +
                 "VALUES (?,?,?,?,?,?) RETURNING id";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -82,8 +82,8 @@ public class PatientDAO {
             ps.setString(1, doctor);
             ps.setString(2, p.getGivenName());
             ps.setString(3, p.getFamilyName());
-            ps.setInt(4, p.getHeartRate());
-            ps.setDouble(5, p.getTemperature());
+            ps.setString(4, p.getGender());
+            ps.setInt(5, p.getAge());
             ps.setString(6, p.getBloodPressure());
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -92,11 +92,12 @@ public class PatientDAO {
             return -1;
         }
     }
+
     public static boolean deletePatientForDoctor(String doctor, int id) throws Exception {
         String sql = "DELETE FROM patients WHERE id = ? AND doctor = ?";
 
-        try (java.sql.Connection conn = DataBase.DatabaseConnection.getConnection();
-             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, id);
             ps.setString(2, doctor);
