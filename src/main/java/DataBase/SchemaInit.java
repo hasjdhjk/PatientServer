@@ -57,6 +57,14 @@ public class SchemaInit {
             try { st.execute("ALTER TABLE doctors ALTER COLUMN givenname DROP NOT NULL"); } catch (Exception ignored) {}
             try { st.execute("ALTER TABLE doctors ALTER COLUMN familyname DROP NOT NULL"); } catch (Exception ignored) {}
 
+            // --- Step 6) Final cleanup: drop legacy columns ---
+            try {
+                st.execute("ALTER TABLE doctors DROP COLUMN IF EXISTS givenname");
+            } catch (Exception ignored) {}
+            try {
+                st.execute("ALTER TABLE doctors DROP COLUMN IF EXISTS familyname");
+            } catch (Exception ignored) {}
+
             // Optional index
             st.execute("CREATE INDEX IF NOT EXISTS idx_doctors_email ON doctors(email)");
 
