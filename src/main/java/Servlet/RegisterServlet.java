@@ -2,7 +2,6 @@ package Servlet;
 
 import com.google.gson.Gson;
 import DataAccessObject.DoctorDAO;
-import Models.Doctor;
 import Utils.EmailSender;
 import jakarta.mail.MessagingException;
 
@@ -54,8 +53,18 @@ public class RegisterServlet extends HttpServlet {
 
         PrintWriter out = resp.getWriter();
 
+        // Basic validation to avoid NPEs / blank input
+        if (registerReq == null || registerReq.email == null || registerReq.password == null ||
+                registerReq.givenName == null || registerReq.familyName == null ||
+                registerReq.email.isBlank() || registerReq.password.isBlank() ||
+                registerReq.givenName.isBlank() || registerReq.familyName.isBlank()) {
+            resp.setStatus(400);
+            resp.getWriter().println(gson.toJson(new SimpleResponse("error", "Missing required fields")));
+            return;
+        }
+
         // 2. Check if email already exists
-        Doctor existing = DoctorDAO.findByEmail(registerReq.email);
+        var existing = DoctorDAO.findByEmail(registerReq.email);
         if (existing != null) {
             out.println(gson.toJson(new SimpleResponse("error", "Email already registered")));
             return;
@@ -67,14 +76,25 @@ public class RegisterServlet extends HttpServlet {
         // 4. Generate verification token
         String token = UUID.randomUUID().toString();
 
-        // 5. Insert doctor
-        DoctorDAO.insertDoctor(registerReq.email, registerReq.givenName,
-                registerReq.familyName, passwordHash, token);
+        // 5. Insert doctor (throws if insert fails)
+        try {
+            int newDoctorId = DoctorDAO.insertDoctor(
+                    registerReq.email,
+                    registerReq.givenName,
+                    registerReq.familyName,
+                    passwordHash,
+                    token
+            );
 
-        // TEMPORARY: auto-verify user (skip email verification)
-        Doctor newDoctor = DoctorDAO.findByEmail(registerReq.email);
-        if (newDoctor != null) {
-            DoctorDAO.markVerified(newDoctor.getId());
+            // TEMPORARY: auto-verify user (skip email verification)
+            if (newDoctorId > 0) {
+                DoctorDAO.markVerified(newDoctorId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.setStatus(500);
+            out.println(gson.toJson(new SimpleResponse("error", "Registration failed: " + e.getMessage())));
+            return;
         }
 
         // 6. Send verification email

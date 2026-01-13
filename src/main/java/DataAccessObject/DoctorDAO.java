@@ -5,6 +5,8 @@ import Models.Doctor;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DoctorDAO {
 
@@ -18,10 +20,12 @@ public class DoctorDAO {
             if (rs.next()) {
                 return mapRow(rs);
             }
-        } catch (Exception e) { e.printStackTrace(); }
-        return null;
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException("findByEmail failed: " + e.getMessage(), e);
+        }
     }
- 
+
     public static Doctor findByVerificationToken(String token) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT * FROM doctors WHERE verification_token = ?";
@@ -32,8 +36,10 @@ public class DoctorDAO {
             if (rs.next()) {
                 return mapRow(rs);
             }
-        } catch (Exception e) { e.printStackTrace(); }
-        return null;
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException("findByVerificationToken failed: " + e.getMessage(), e);
+        }
     }
 
     public static Doctor findByResetToken(String token) {
@@ -47,25 +53,45 @@ public class DoctorDAO {
             if (rs.next()) {
                 return mapRow(rs);
             }
-        } catch (Exception e) { e.printStackTrace(); }
-        return null;
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException("findByResetToken failed: " + e.getMessage(), e);
+        }
     }
 
-    public static void insertDoctor(String email, String givenName,
-                                    String familyName, String passwordHash,
-                                    String verificationToken) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "INSERT INTO doctors " +
-                    "(email, givenname, familyname, password_hash, verified, verification_token) " +
-                    "VALUES (?,?,?,?,false,?)";
-            PreparedStatement ps = conn.prepareStatement(sql);
+    public static int insertDoctor(String email, String givenName,
+                                  String familyName, String passwordHash,
+                                  String verificationToken) {
+        String sql = "INSERT INTO doctors " +
+                "(email, given_name, family_name, password_hash, verified, verification_token) " +
+                "VALUES (?,?,?,?,false,?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
             ps.setString(1, email);
             ps.setString(2, givenName);
             ps.setString(3, familyName);
             ps.setString(4, passwordHash);
             ps.setString(5, verificationToken);
-            ps.executeUpdate();
-        } catch (Exception e) { e.printStackTrace(); }
+
+            int affected = ps.executeUpdate();
+            if (affected != 1) {
+                throw new RuntimeException("insertDoctor failed: affected rows=" + affected);
+            }
+
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getInt(1);
+                }
+            }
+
+            // If DB/driver didn't return keys, treat as failure so caller won't report success incorrectly.
+            throw new RuntimeException("insertDoctor failed: no generated key returned");
+
+        } catch (Exception e) {
+            throw new RuntimeException("insertDoctor failed: " + e.getMessage(), e);
+        }
     }
 
     public static void markVerified(int id) {
@@ -102,11 +128,32 @@ public class DoctorDAO {
         Doctor d = new Doctor();
         d.setId(rs.getInt("id"));
         d.setEmail(rs.getString("email"));
-        d.setGivenName(rs.getString("givenname"));
-        d.setFamilyName(rs.getString("familyname"));
+        d.setGivenName(rs.getString("given_name"));
+        d.setFamilyName(rs.getString("family_name"));
         d.setPasswordHash(rs.getString("password_hash"));
         d.setVerified(rs.getBoolean("verified"));
         return d;
     }
+    public static List<Doctor> getAllDoctors() {
+        List<Doctor> list = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT id, email, given_name, family_name, verified FROM doctors ORDER BY id";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
 
+            while (rs.next()) {
+                Doctor d = new Doctor();
+                d.setId(rs.getInt("id"));
+                d.setEmail(rs.getString("email"));
+                d.setGivenName(rs.getString("given_name"));
+                d.setFamilyName(rs.getString("family_name"));
+                d.setVerified(rs.getBoolean("verified"));
+                list.add(d);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("getAllDoctors failed: " + e.getMessage());
+        }
+        return list;
+    }
 }
