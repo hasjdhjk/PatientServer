@@ -156,4 +156,75 @@ public class DoctorDAO {
         }
         return list;
     }
+    /**
+     * Permanently delete a doctor account by email.
+     *
+     * IMPORTANT:
+     * - Since patients.doctor is TEXT (not FK), we must reassign/clear patients first,
+     *   otherwise those patients would still point to a non-existent doctor email.
+     *
+     * Strategy here:
+     * - patients.doctor -> 'demo' for all rows owned by this doctor
+     * - delete doctors row
+     *
+     * @return true if a doctor row was deleted, false if no such doctor existed
+     */
+    public static boolean hardDeleteByEmail(String email) {
+        if (email == null || email.isBlank()) return false;
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                // 1) Reassign patients to demo (or you can choose NULL if schema allows)
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE patients SET doctor = 'demo' WHERE doctor = ?")) {
+                    ps.setString(1, email.trim());
+                    ps.executeUpdate();
+                }
+
+                // 2) Delete doctor
+                int affected;
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "DELETE FROM doctors WHERE email = ?")) {
+                    ps.setString(1, email.trim());
+                    affected = ps.executeUpdate();
+                }
+
+                conn.commit();
+                return affected == 1;
+
+            } catch (Exception inner) {
+                try { conn.rollback(); } catch (Exception ignored) {}
+                throw inner;
+            } finally {
+                try { conn.setAutoCommit(true); } catch (Exception ignored) {}
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("hardDeleteByEmail failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * (Optional) hard delete by id, in case you prefer /doctors/{id}.
+     * It first finds the email, then delegates to hardDeleteByEmail.
+     */
+    public static boolean hardDeleteById(int id) {
+        if (id <= 0) return false;
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT email FROM doctors WHERE id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) return false;
+                    String email = rs.getString("email");
+                    return hardDeleteByEmail(email);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("hardDeleteById failed: " + e.getMessage(), e);
+        }
+    }
 }
