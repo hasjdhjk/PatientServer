@@ -380,6 +380,34 @@
     const sel = document.getElementById("patientSelect");
     const dbg = document.getElementById("dbg");
 
+    // Cache all DOM nodes explicitly (avoid relying on implicit global IDs)
+    const demographics = document.getElementById("demographics");
+    const records      = document.getElementById("records");
+    const notes        = document.getElementById("notes");
+
+    const lblCard = document.getElementById("lblCard");
+    const lblResp = document.getElementById("lblResp");
+    const lblMet  = document.getElementById("lblMet");
+    const labCard = document.getElementById("labCard");
+    const labResp = document.getElementById("labResp");
+    const labMet  = document.getElementById("labMet");
+
+    const heart = document.getElementById("heart");
+    const lungs = document.getElementById("lungs");
+
+    const ecg  = document.getElementById("ecg");
+    const resp = document.getElementById("resp");
+
+    const dHR   = document.getElementById("dHR");
+    const dRR   = document.getElementById("dRR");
+    const dSpO2 = document.getElementById("dSpO2");
+    const dBP   = document.getElementById("dBP");
+    const dTemp = document.getElementById("dTemp");
+    const dStatus = document.getElementById("dStatus");
+
+    const noteText  = document.getElementById("noteText");
+    const noteLevel = document.getElementById("noteLevel");
+
     // =========================
     // Simulation mode (Java-driven)
     // =========================
@@ -400,8 +428,18 @@
     }
     function apiUrl(path){
         const base = getApiBase().replace(/\/$/, "");
+
+        // Normalize path to start with "/"
         if(!path.startsWith("/")) path = "/" + path;
-        return base ? (base + path) : (".." + path);
+
+        // If Java injected an absolute base, use it.
+        if (base) return base + path;
+
+        // Otherwise, dashboard is served at: /<context>/digital_twin/dashboard.html
+        // API endpoints are at:          /<context>/api/...
+        // So we want:                   ../api/...
+        // Build a relative URL without introducing double slashes.
+        return ".." + path;
     }
 
     function escapeHtml(str){
@@ -581,12 +619,12 @@
         dStatus.textContent = st.txt;
         dStatus.style.color = st.color;
 
-        heart.style.setProperty("--hr", Math.max(1, Math.round(live.hr)));
-        lungs.style.setProperty("--rr", Math.max(1, Math.round(live.rr)));
+        if (heart) heart.style.setProperty("--hr", Math.max(1, Math.round(live.hr)));
+        if (lungs) lungs.style.setProperty("--rr", Math.max(1, Math.round(live.rr)));
     }
 
     // called by Java OR by polling
-    function switchToVitalsFromJava(hr, rr, spo2, bpS, bpD, temp) {
+    window.switchToVitalsFromJava = function(hr, rr, spo2, bpS, bpD, temp) {
         // Keep a single source of truth: the module-scoped `live` object.
         if (!live) {
             live = { hr, rr, spo2, bpS, bpD, temp };
@@ -640,7 +678,7 @@
 
             dbg.textContent = `DB OK: id=${currentPatientId} hr=${hr} bp=${sys}/${dia} temp=${temp}`;
 
-            switchToVitalsFromJava(hr, rr, spo2, sys, dia, temp);
+            window.switchToVitalsFromJava(hr, rr, spo2, sys, dia, temp);
 
         } catch (e) {
             dbg.textContent = "DB: exception (see console)";
