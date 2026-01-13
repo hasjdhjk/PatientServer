@@ -7,26 +7,13 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
 public class DatabaseConnection {
 
-    // Local development defaults (Mac/laptop)
-    // You can override these with env vars if you want.
-    private static final String LOCAL_URL  = getenvAny("LOCAL_DATABASE_URL", "JDBC_DATABASE_URL", "PGJDBC_URL") != null
-            ? getenvAny("LOCAL_DATABASE_URL", "JDBC_DATABASE_URL", "PGJDBC_URL")
-            : "jdbc:postgresql://localhost:5432/postgres";
-
-    // By default, local Postgres usually uses the "postgres" role.
-    // Override with env LOCAL_DB_USER / LOCAL_DB_PASSWORD if your machine differs.
-    private static final String LOCAL_USER = getenvAny("LOCAL_DB_USER") != null
-            ? getenvAny("LOCAL_DB_USER")
-            : "apple";
-
-    private static final String LOCAL_PASS = getenvAny("LOCAL_DB_PASSWORD") != null
-            ? getenvAny("LOCAL_DB_PASSWORD")
-            : "";
+    private static volatile boolean schemaInitialized = false;
 
     /**
      * Tsuru / cloud: use env vars.
@@ -40,9 +27,19 @@ public class DatabaseConnection {
     public static Connection getConnection() {
         try {
             Class.forName("org.postgresql.Driver");
-            DbInfo info = hasCloudDbEnv() ? resolveDbInfoFromEnv() : new DbInfo(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
+            DbInfo info = resolveDbInfoFromEnvStrict();
             Connection conn = DriverManager.getConnection(info.jdbcUrl, info.user, info.pass);
             if (conn == null) throw new SQLException("DriverManager.getConnection returned null");
+
+            if (!schemaInitialized) {
+                synchronized (DatabaseConnection.class) {
+                    if (!schemaInitialized) {
+                        SchemaInit.ensureSchema(conn);
+                        schemaInitialized = true;
+                    }
+                }
+            }
+
             return conn;
 
         } catch (Exception e) {
@@ -51,43 +48,27 @@ public class DatabaseConnection {
         }
     }
 
-    // ======================= ENV RESOLUTION =======================
-
-    private static boolean hasCloudDbEnv() {
-        // Tsuru / cloud typically provides DATABASE_URL or PG* variables
-        String databaseUrl = getenvAny("DATABASE_URL", "TSURU_DATABASE_URL");
-        if (isNonBlank(databaseUrl)) return true;
-
-        String host = System.getenv("PGHOST");
-        String port = System.getenv("PGPORT");
-        String db   = System.getenv("PGDATABASE");
-        String user = System.getenv("PGUSER");
-        // pass may be blank in some setups
-        return isNonBlank(host) && isNonBlank(port) && isNonBlank(db) && isNonBlank(user);
-    }
-
-    private static DbInfo resolveDbInfoFromEnv() {
+    private static DbInfo resolveDbInfoFromEnvStrict() {
         String databaseUrl = getenvAny("DATABASE_URL", "TSURU_DATABASE_URL"); // second key just in case
 
         if (databaseUrl != null && !databaseUrl.isBlank()) {
             return fromDatabaseUrl(databaseUrl.trim());
         }
 
-        // Fallback to PG* vars (common in many platforms)
+        // Strict fallback to PG* vars (common in many platforms)
         String host = System.getenv("PGHOST");
         String port = System.getenv("PGPORT");
         String db   = System.getenv("PGDATABASE");
         String user = System.getenv("PGUSER");
         String pass = System.getenv("PGPASSWORD");
 
-        if (isNonBlank(host) && isNonBlank(port) && isNonBlank(db) && isNonBlank(user)) {
-            // add sslmode=require for cloud safety (harmless locally if ignored)
-            String jdbc = "jdbc:postgresql://" + host + ":" + port + "/" + db + "?sslmode=require";
-            return new DbInfo(jdbc, user, pass == null ? "" : pass);
+        if (!isNonBlank(host) || !isNonBlank(port) || !isNonBlank(db) || !isNonBlank(user)) {
+            throw new IllegalStateException("Missing required Postgres env vars. Need DATABASE_URL or PGHOST/PGPORT/PGDATABASE/PGUSER.");
         }
 
-        // Local fallback (when running on your laptop)
-        return new DbInfo(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
+        // add sslmode=require for cloud safety (harmless locally if ignored)
+        String jdbc = "jdbc:postgresql://" + host + ":" + port + "/" + db + "?sslmode=require";
+        return new DbInfo(jdbc, user, pass == null ? "" : pass);
     }
 
     /**
@@ -145,8 +126,8 @@ public class DatabaseConnection {
             return new DbInfo(jdbc, user, pass);
 
         } catch (URISyntaxException e) {
-            // If parsing fails, last resort: local fallback
-            return new DbInfo(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
+            // If parsing fails, last resort: throw exception since no local fallback
+            throw new IllegalStateException("Invalid DATABASE_URL format and no local fallback available.", e);
         }
     }
 
@@ -194,7 +175,7 @@ public class DatabaseConnection {
         if (host != null || db != null || user != null) {
             return "using PG* env host=" + host + " db=" + db + " user=" + user;
         }
-        return "using LOCAL url=" + LOCAL_URL + " user=" + LOCAL_USER;
+        return "missing DATABASE_URL and PG* env";
     }
 
     private static class DbInfo {
