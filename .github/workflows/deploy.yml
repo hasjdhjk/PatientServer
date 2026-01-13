@@ -34,16 +34,10 @@ jobs:
         run: |
           mv ./build/libs/PatientServer-1.0-SNAPSHOT.war ./ROOT.war
 
-      - name: Check ROOT.war exists
+      - name: Debug - print TSURU_HOST
         run: |
-          echo "Current directory:"
-          pwd
-          echo "List files in repo root:"
-          ls -la
-          echo "ROOT.war details:"
-          ls -la ROOT.war
-          echo "WARs found anywhere under build/:"
-          find build -type f -iname "*.war" -print || true
+         echo "TSURU_HOST is: ${{ secrets.TSURU_HOST }}"
+         echo "TSURU_HOST is: ${{ secrets.TSURU_TOKEN }}"
 
       - name: Deploy to Tsuru
         env:
