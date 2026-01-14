@@ -101,6 +101,32 @@ public class PatientDAO {
         }
     }
 
+    /**
+     * Delete ALL patients for a given doctor (e.g., to clear demo data).
+     *
+     * @return number of rows deleted
+     */
+    public static int deletePatientsByDoctor(String doctor) {
+        if (doctor == null) doctor = "";
+
+        String sql = "DELETE FROM patients WHERE doctor = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, doctor);
+            return ps.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("deletePatientsByDoctor SQL failed: " + e.getMessage(), e);
+        }
+    }
+
+    /** Convenience helper: clear demo doctor patients. */
+    public static int clearDemoPatients() {
+        return deletePatientsByDoctor("demo");
+    }
+
     public static boolean deletePatientForDoctor(String doctor, int id) throws Exception {
         String sql = "DELETE FROM patients WHERE id = ? AND doctor = ?";
 

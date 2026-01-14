@@ -124,6 +124,26 @@ public class DoctorDAO {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
+    /**
+     * Update doctor's given and family name by email.
+     * Used by AccountPage when saving profile changes.
+     */
+    public static void updateDoctorNameByEmail(String email, String givenName, String familyName) {
+        if (email == null || email.isBlank()) return;
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "UPDATE doctors SET given_name = ?, family_name = ? WHERE email = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, givenName);
+                ps.setString(2, familyName);
+                ps.setString(3, email.trim());
+                ps.executeUpdate();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("updateDoctorNameByEmail failed: " + e.getMessage(), e);
+        }
+    }
+
     private static Doctor mapRow(ResultSet rs) throws SQLException {
         Doctor d = new Doctor();
         d.setId(rs.getInt("id"));
