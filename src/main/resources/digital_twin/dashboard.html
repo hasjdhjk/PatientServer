@@ -363,8 +363,10 @@
 <div id="dbg">DB: loading…</div>
 
 <script>
-
+    // =========================
     // 1) Server-backed patients
+    // =========================
+
     // These are populated from GET ../api/patients?doctor=<logged-in doctor>
     let patients = [];   // [{id, givenname, familyname, bp, temperature, heartrate, ...}]
     let currentPatientId = null;
