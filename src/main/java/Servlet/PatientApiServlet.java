@@ -13,23 +13,24 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 
+// Handles requests to /api/patient
 @WebServlet(urlPatterns = {"/api/patient"})
+// REST API for getting and creating patients
 public class PatientApiServlet extends HttpServlet {
 
     private static final Gson GSON = new Gson();
 
-    // =========================
-    // GET /api/patient?id=1&doctor=demo
-    // return: { ok:true, id, givenname, familyname, hr, sys, dia, temp }
-    // =========================
+    // Get one patient by id (for a doctor)
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
+        // doctor email (default demo)
         String doctor = req.getParameter("doctor");
         if (doctor == null || doctor.isBlank()) doctor = "demo";
 
+        // patient id
         String idStr = req.getParameter("id");
         int id;
         try {
@@ -41,6 +42,7 @@ public class PatientApiServlet extends HttpServlet {
         }
 
         try {
+            // load patient from database
             Patient p = PatientDAO.getPatientByIdForDoctor(doctor, id);
             if (p == null) {
                 resp.setStatus(404);
@@ -55,6 +57,7 @@ public class PatientApiServlet extends HttpServlet {
                 dia = Integer.parseInt(parts[1].trim());
             } catch (Exception ignore) {}
 
+            // build response JSON
             JsonObject out = new JsonObject();
             out.addProperty("ok", true);
             out.addProperty("id", p.getId());
@@ -78,19 +81,17 @@ public class PatientApiServlet extends HttpServlet {
         }
     }
 
-    // =========================
-    // POST /api/patient
-    // body: {doctor,givenname,familyname,heartrate,temperature,bp}
-    // return: { ok:true, id: <newId> }
-    // =========================
+    // Create a new patient
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
+        // read request body
         String body = readBody(req);
 
         try {
+            // parse JSON body
             JsonObject in = new JsonParser().parse(body).getAsJsonObject();
 
             String doctor = getStr(in, "doctor");
@@ -108,6 +109,7 @@ public class PatientApiServlet extends HttpServlet {
                 return;
             }
 
+            // create patient object
             Patient p = new Patient(0, givenname, familyname, gender, age, bp);
 
             int newId = PatientDAO.insertPatientForDoctor(doctor, p);
@@ -129,6 +131,7 @@ public class PatientApiServlet extends HttpServlet {
         }
     }
 
+    // Read raw request body
     private static String readBody(HttpServletRequest req) throws IOException {
         StringBuilder sb = new StringBuilder();
         try (BufferedReader br = req.getReader()) {
@@ -138,10 +141,12 @@ public class PatientApiServlet extends HttpServlet {
         return sb.toString();
     }
 
+    // Safe string field read
     private static String getStr(JsonObject in, String k) {
         return (in.has(k) && !in.get(k).isJsonNull()) ? in.get(k).getAsString() : null;
     }
 
+    // Safe int field read
     private static int getInt(JsonObject in, String k) {
         try {
             return (in.has(k) && !in.get(k).isJsonNull()) ? in.get(k).getAsInt() : 0;
@@ -150,6 +155,7 @@ public class PatientApiServlet extends HttpServlet {
         }
     }
 
+    // Safe double field read
     private static double getDouble(JsonObject in, String k) {
         try {
             return (in.has(k) && !in.get(k).isJsonNull()) ? in.get(k).getAsDouble() : 0.0;

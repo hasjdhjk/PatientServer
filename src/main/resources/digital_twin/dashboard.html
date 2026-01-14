@@ -367,7 +367,7 @@
     // 1) Server-backed patients
     // =========================
 
-    // These are populated from GET ../api/patients?doctor=demo
+    // These are populated from GET ../api/patients?doctor=<logged-in doctor>
     let patients = [];   // [{id, givenname, familyname, bp, temperature, heartrate, ...}]
     let currentPatientId = null;
 
@@ -416,11 +416,51 @@
     window.simMode = true;
 
     // Doctor + API base context (injected by Java DigitalTwinPanel)
-    // Java should set:
+    // Preferred sources (highest -> lowest):
+    //   1) window.__doctor (Java injected)
+    //   2) URL query param ?doctor=
+    //   3) localStorage key "doctorEmail"
+    //   4) window.doctor (legacy)
+    //   5) fallback "demo"
+    // Java can set:
     //   window.__doctor = "<logged-in doctor>";
     //   window.__apiBase = "https://bioeng-bbb-app.impaas.uk";
+
+    function getDoctorFromQuery(){
+        try{
+            const q = new URLSearchParams(window.location.search);
+            const d = q.get("doctor");
+            return (d && d.trim()) ? d.trim() : "";
+        }catch{
+            return "";
+        }
+    }
+
+    function getDoctorFromStorage(){
+        try{
+            const d = localStorage.getItem("doctorEmail");
+            return (d && d.trim()) ? d.trim() : "";
+        }catch{
+            return "";
+        }
+    }
+
     function getDoctor(){
-        return String(window.__doctor || window.doctor || "demo");
+        return String(
+            (window.__doctor && String(window.__doctor).trim()) ||
+            getDoctorFromQuery() ||
+            getDoctorFromStorage() ||
+            (window.doctor && String(window.doctor).trim()) ||
+            "demo"
+        );
+    }
+
+    // Optional: allow Java to set the doctor after the page loads
+    window.setDoctorFromJava = function(doctorEmail){
+        if(doctorEmail != null && String(doctorEmail).trim()){
+            window.__doctor = String(doctorEmail).trim();
+            try{ localStorage.setItem("doctorEmail", window.__doctor); }catch{}
+        }
     }
     function getApiBase(){
         // If not injected, fall back to relative (works when served under /digital_twin/)
@@ -760,6 +800,8 @@
             setInterval(pollFromServer, 1000);
 
             const doc = getDoctor();
+            // Persist doctor so refreshes keep the same account when Java doesn't re-inject
+            try{ localStorage.setItem("doctorEmail", doc); }catch{}
             const base = getApiBase();
             const baseTag = base ? ` base=${base}` : "";
             dbg.textContent = window.simMode ? `SIM: Java simulator (doctor=${doc})${baseTag}` : `DB: ready (doctor=${doc})${baseTag}`;
