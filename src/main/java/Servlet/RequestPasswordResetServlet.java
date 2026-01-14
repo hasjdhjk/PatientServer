@@ -52,7 +52,8 @@ public class RequestPasswordResetServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         Doctor d = DoctorDAO.findByEmail(r.email);
-        // For security, you usually still respond "ok" even if not found
+
+        // respond ok even not found
         if (d == null) {
             out.println(gson.toJson(new SimpleResponse("ok", "If that email exists, a reset link was sent.")));
             return;

@@ -14,7 +14,7 @@ import java.util.List;
 
 // Handles requests to /api/patients
 @WebServlet(urlPatterns = {"/api/patients"})
-// REST API for listing patients (and clearing demo data)
+// rest api for listing patients (and clearing demo data)
 public class PatientsApiServlet extends HttpServlet {
     // List patients for a doctor
     @Override
@@ -34,7 +34,7 @@ public class PatientsApiServlet extends HttpServlet {
         resp.getWriter().write(gson.toJson(list));
     }
 
-    // Clear demo patients (POST /api/patients?action=clearDemo&doctor=demo)
+    // clear demo patients (POST /api/patients?action=clearDemo&doctor=demo)
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json");

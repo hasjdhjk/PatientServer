@@ -20,13 +20,13 @@ public class PatientApiServlet extends HttpServlet {
 
     private static final Gson GSON = new Gson();
 
-    // Get one patient by id (for a doctor)
+    // Get one patient by id (for doctor)
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
-        // doctor email (default demo)
+        // doctor email
         String doctor = req.getParameter("doctor");
         if (doctor == null || doctor.isBlank()) doctor = "demo";
 

@@ -40,7 +40,7 @@ public class RegisterServlet extends HttpServlet {
         resp.setContentType("application/json");
         Gson gson = new Gson();
 
-        // 1. Read JSON body (same pattern as Tutorial 7) :contentReference[oaicite:5]{index=5}
+        // 1. Read JSON body
         StringBuilder sb = new StringBuilder();
         try (BufferedReader reader = req.getReader()) {
             String line;
@@ -53,7 +53,7 @@ public class RegisterServlet extends HttpServlet {
 
         PrintWriter out = resp.getWriter();
 
-        // Basic validation to avoid NPEs / blank input
+        // Basic validation to avoid blank input
         if (registerReq == null || registerReq.email == null || registerReq.password == null ||
                 registerReq.givenName == null || registerReq.familyName == null ||
                 registerReq.email.isBlank() || registerReq.password.isBlank() ||
@@ -70,13 +70,13 @@ public class RegisterServlet extends HttpServlet {
             return;
         }
 
-        // 3. Hash password (for a uni project you could keep it simple, but in real apps use a proper password hasher)
+        // 3. Hash password
         String passwordHash = Integer.toHexString(registerReq.password.hashCode());
 
         // 4. Generate verification token
         String token = UUID.randomUUID().toString();
 
-        // 5. Insert doctor (throws if insert fails)
+        // 5. Insert doctor
         try {
             int newDoctorId = DoctorDAO.insertDoctor(
                     registerReq.email,
@@ -86,7 +86,7 @@ public class RegisterServlet extends HttpServlet {
                     token
             );
 
-            // TEMPORARY: auto-verify user (skip email verification)
+            // auto verify user (skip email verification as variables cant be add to tsuru)
             if (newDoctorId > 0) {
                 DoctorDAO.markVerified(newDoctorId);
             }
@@ -119,11 +119,11 @@ public class RegisterServlet extends HttpServlet {
 //            out.println(gson.toJson(new SimpleResponse("error", "Failed to send verification email")));
 //            return;
 //        }
-        // DISABLE EMAIL FOR DEBUG
+        // disable email
         System.out.println("EMAIL DISABLED - WOULD SEND TO: " + registerReq.email);
 
 
-        // 7. Respond OK
+        // 7. respond ok
         out.println(gson.toJson(new SimpleResponse("ok", "Registration successful. Check your email.")));
     }
 
