@@ -363,12 +363,10 @@
 <div id="dbg">DB: loading…</div>
 
 <script>
-    // =========================
-    // 1) Server-backed patients
-    // =========================
+    // Patients from server DB
 
-    // These are populated from GET ../api/patients?doctor=<logged-in doctor>
-    let patients = [];   // [{id, givenname, familyname, bp, temperature, heartrate, ...}]
+    // These are populated from GET ../api/patients?doctor=（DOCTOR EMAIL）
+    let patients = [];
     let currentPatientId = null;
 
     // “Live state” for right-side vitals
@@ -380,7 +378,7 @@
     const sel = document.getElementById("patientSelect");
     const dbg = document.getElementById("dbg");
 
-    // Cache all DOM nodes explicitly (avoid relying on implicit global IDs)
+    // Cache all DOM nodes explicitly
     const demographics = document.getElementById("demographics");
     const records      = document.getElementById("records");
     const notes        = document.getElementById("notes");
@@ -408,24 +406,12 @@
     const noteText  = document.getElementById("noteText");
     const noteLevel = document.getElementById("noteLevel");
 
-    // =========================
-    // Simulation mode (Java-driven)
-    // =========================
+    // Simulation mode (Java pushes vitals)
     // When true, the dashboard will NOT poll the server DB and will only display
     // values pushed from Java via window.switchToVitalsFromJava(...).
     window.simMode = true;
 
-    // Doctor + API base context (injected by Java DigitalTwinPanel)
-    // Preferred sources (highest -> lowest):
-    //   1) window.__doctor (Java injected)
-    //   2) URL query param ?doctor=
-    //   3) localStorage key "doctorEmail"
-    //   4) window.doctor (legacy)
-    //   5) fallback "demo"
-    // Java can set:
-    //   window.__doctor = "<logged-in doctor>";
-    //   window.__apiBase = "https://bioeng-bbb-app.impaas.uk";
-
+    // Doctor + API base (Java can inject window.__doctor / window.__apiBase)
     function getDoctorFromQuery(){
         try{
             const q = new URLSearchParams(window.location.search);
@@ -455,7 +441,7 @@
         );
     }
 
-    // Optional: allow Java to set the doctor after the page loads
+    // Allow Java to set the doctor after the page loads
     window.setDoctorFromJava = function(doctorEmail){
         if(doctorEmail != null && String(doctorEmail).trim()){
             window.__doctor = String(doctorEmail).trim();
@@ -463,7 +449,6 @@
         }
     }
     function getApiBase(){
-        // If not injected, fall back to relative (works when served under /digital_twin/)
         return String(window.__apiBase || "").trim();
     }
     function apiUrl(path){
@@ -475,10 +460,6 @@
         // If Java injected an absolute base, use it.
         if (base) return base + path;
 
-        // Otherwise, dashboard is served at: /<context>/digital_twin/dashboard.html
-        // API endpoints are at:          /<context>/api/...
-        // So we want:                   ../api/...
-        // Build a relative URL without introducing double slashes.
         return ".." + path;
     }
 
@@ -486,16 +467,6 @@
         return String(str ?? "").replace(/[&<>"']/g, m => ({
             "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
         }[m]));
-    }
-
-    function parseBP(bpStr){
-        // accepts "150/95"
-        if(!bpStr) return {sys:0,dia:0};
-        const parts = String(bpStr).split("/");
-        if(parts.length !== 2) return {sys:0,dia:0};
-        const sys = Number(parts[0].trim()) || 0;
-        const dia = Number(parts[1].trim()) || 0;
-        return {sys, dia};
     }
 
     function displayName(p){
@@ -570,9 +541,7 @@
         lblMet.classList.toggle("hidden", !labels.met);
     }
 
-    // =========================
-    // 2) Notes (client-side)
-    // =========================
+    // Saved in browser only
     function quickNote(text){
         noteText.value = text;
         noteText.focus();
@@ -626,9 +595,7 @@
     `).join("") : `<div style="opacity:.7;font-size:13px">No notes yet. Add a note to document observations.</div>`;
     }
 
-    // =========================
-    // 3) Right panel vitals
-    // =========================
+    // Right panel vitals
     function statusFromVitals(v){
         let score = 0;
         if(v.spo2 < 92) score++;
@@ -665,7 +632,7 @@
 
     // called by Java OR by polling
     window.switchToVitalsFromJava = function(hr, rr, spo2, bpS, bpD, temp) {
-        // Keep a single source of truth: the module-scoped `live` object.
+        // Keep a single source of truth: the module-scoped live object.
         if (!live) {
             live = { hr, rr, spo2, bpS, bpD, temp };
         } else {
@@ -683,9 +650,7 @@
         paintVitals();
     }
 
-    // =========================
-    // 4) Poll single patient vitals
-    // =========================
+    // Poll selected patient vitals
     async function pollFromServer() {
         // SIMULATION MODE: Java pushes vitals, skip DB completely
         if (window.simMode === true) {
@@ -706,13 +671,12 @@
 
             const data = await res.json();
 
-            // Your API example: {"id":1,"givenname":"Alice","familyname":"Smith","hr":110,"rr":0,"spo2":0,"sys":150,"dia":95,"temp":38.2}
             const hr  = Number(data.hr ?? data.heartrate ?? data.heartRate ?? 0) || 0;
             const sys = Number(data.sys ?? 0) || 0;
             const dia = Number(data.dia ?? 0) || 0;
             const temp= Number(data.temp ?? data.temperature ?? 0) || 0;
 
-            // rr/spo2 might be missing -> keep defaults
+            // rr/spo2 might be missing ： keep defaults
             const rr   = Number(data.rr ?? 0) || (live?.rr ?? 12);
             const spo2 = Number(data.spo2 ?? 0) || (live?.spo2 ?? 98);
 
@@ -726,9 +690,7 @@
         }
     }
 
-    // =========================
-    // 5) Dropdown + Java bridge
-    // =========================
+    // Dropdown + Java bridge
     function switchPatientById(id){
         currentPatientId = Number(id);
         renderLeftPanelForCurrent();
@@ -748,11 +710,8 @@
         switchPatientById(sel.value);
     });
 
-    // =========================
-    // 6) ECG/Resp waves (still synthetic visuals)
-    // =========================
+    // ECG/Resp waves
     function ecgSample(x){
-        // simple generic waveform, amplitude mildly tied to HR
         const amp = 28 + (live ? (Math.min(140,live.hr) - 60)/10 : 0);
         const sharp = 24;
         const qrs = Math.exp(-Math.pow(x-30,2)/sharp) * amp;
@@ -785,9 +744,7 @@
         respP += useRR/8;
     },80);
 
-    // =========================
-    // 7) Boot
-    // =========================
+    // Boot
     (async function init(){
         try{
             patients = await fetchPatientsList();
