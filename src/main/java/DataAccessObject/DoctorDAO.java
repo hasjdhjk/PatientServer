@@ -8,8 +8,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+// Data Access Object for Doctor-related database operations
 public class DoctorDAO {
 
+    // Find doctor by email
     public static Doctor findByEmail(String email) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT * FROM doctors WHERE email = ?";
@@ -26,6 +28,7 @@ public class DoctorDAO {
         }
     }
 
+    // Find doctor by email verification token
     public static Doctor findByVerificationToken(String token) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT * FROM doctors WHERE verification_token = ?";
@@ -42,6 +45,7 @@ public class DoctorDAO {
         }
     }
 
+    // Find doctor by password reset token
     public static Doctor findByResetToken(String token) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT * FROM doctors WHERE reset_token = ? " +
@@ -59,6 +63,7 @@ public class DoctorDAO {
         }
     }
 
+    // Insert a new doctor and return generated ID
     public static int insertDoctor(String email, String givenName,
                                   String familyName, String passwordHash,
                                   String verificationToken) {
@@ -94,6 +99,7 @@ public class DoctorDAO {
         }
     }
 
+    // Mark doctor as verified
     public static void markVerified(int id) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "UPDATE doctors SET verified = true, verification_token = NULL WHERE id = ?";
@@ -103,6 +109,7 @@ public class DoctorDAO {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
+    // Set password reset token and expiry time
     public static void setResetToken(int id, String token, LocalDateTime expires) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "UPDATE doctors SET reset_token = ?, reset_token_expires = ? WHERE id = ?";
@@ -114,6 +121,7 @@ public class DoctorDAO {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
+    // Update doctor's password and clear reset token
     public static void updatePassword(int id, String newHash) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "UPDATE doctors SET password_hash = ?, reset_token=NULL, reset_token_expires=NULL WHERE id = ?";
@@ -124,10 +132,7 @@ public class DoctorDAO {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    /**
-     * Update doctor's given and family name by email.
-     * Used by AccountPage when saving profile changes.
-     */
+    // Update doctor's name using email
     public static void updateDoctorNameByEmail(String email, String givenName, String familyName) {
         if (email == null || email.isBlank()) return;
 
@@ -144,6 +149,7 @@ public class DoctorDAO {
         }
     }
 
+    // Map a database row to a Doctor object
     private static Doctor mapRow(ResultSet rs) throws SQLException {
         Doctor d = new Doctor();
         d.setId(rs.getInt("id"));
@@ -154,6 +160,8 @@ public class DoctorDAO {
         d.setVerified(rs.getBoolean("verified"));
         return d;
     }
+
+    // Retrieve all doctors
     public static List<Doctor> getAllDoctors() {
         List<Doctor> list = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection()) {
@@ -176,19 +184,7 @@ public class DoctorDAO {
         }
         return list;
     }
-    /**
-     * Permanently delete a doctor account by email.
-     *
-     * IMPORTANT:
-     * - Since patients.doctor is TEXT (not FK), we must reassign/clear patients first,
-     *   otherwise those patients would still point to a non-existent doctor email.
-     *
-     * Strategy here:
-     * - patients.doctor -> 'demo' for all rows owned by this doctor
-     * - delete doctors row
-     *
-     * @return true if a doctor row was deleted, false if no such doctor existed
-     */
+    // Permanently delete doctor by email and reassign patients
     public static boolean hardDeleteByEmail(String email) {
         if (email == null || email.isBlank()) return false;
 
@@ -226,10 +222,7 @@ public class DoctorDAO {
         }
     }
 
-    /**
-     * (Optional) hard delete by id, in case you prefer /doctors/{id}.
-     * It first finds the email, then delegates to hardDeleteByEmail.
-     */
+    // Permanently delete doctor by ID
     public static boolean hardDeleteById(int id) {
         if (id <= 0) return false;
 
