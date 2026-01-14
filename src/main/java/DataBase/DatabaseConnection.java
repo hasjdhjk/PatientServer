@@ -15,15 +15,7 @@ public class DatabaseConnection {
 
     private static volatile boolean schemaInitialized = false;
 
-    /**
-     * Tsuru / cloud: use env vars.
-     *
-     * Prefer:
-     *   1) DATABASE_URL  (e.g. postgres://user:pass@host:port/db?sslmode=require)
-     *
-     * Fallback:
-     *   2) PGHOST / PGPORT / PGDATABASE / PGUSER / PGPASSWORD
-     */
+    // Connect to Postgres using env vars.
     public static Connection getConnection() {
         try {
             Class.forName("org.postgresql.Driver");
@@ -43,7 +35,7 @@ public class DatabaseConnection {
             return conn;
 
         } catch (Exception e) {
-            // IMPORTANT: print env-based details without leaking password
+            // IMPORTANT: print env-based details without leaking a password
             throw new RuntimeException("DB connection failed: " + safeDebugInfo() + " msg=" + e.getMessage(), e);
         }
     }
@@ -71,17 +63,9 @@ public class DatabaseConnection {
         return new DbInfo(jdbc, user, pass == null ? "" : pass);
     }
 
-    /**
-     * Parse DATABASE_URL formats like:
-     *   postgres://user:pass@host:5432/dbname
-     *   postgresql://user:pass@host:5432/dbname?sslmode=require
-     *   jdbc:postgresql://host:5432/dbname?user=...&password=...
-     */
     private static DbInfo fromDatabaseUrl(String raw) {
         // If already a JDBC url
         if (raw.startsWith("jdbc:postgresql://")) {
-            // Some platforms include user/pass as query params, others don't.
-            // We'll keep it as jdbcUrl and still try to extract user/pass if possible.
             Map<String, String> q = parseQuery(raw.contains("?") ? raw.substring(raw.indexOf('?') + 1) : "");
             String user = q.getOrDefault("user", q.getOrDefault("username", ""));
             String pass = q.getOrDefault("password", "");
@@ -91,7 +75,6 @@ public class DatabaseConnection {
             return new DbInfo(raw, user == null ? "" : user, pass == null ? "" : pass);
         }
 
-        // Normalize scheme postgres:// or postgresql://
         String normalized = raw.replaceFirst("^postgres://", "postgresql://");
 
         try {
@@ -119,19 +102,19 @@ public class DatabaseConnection {
             // Build JDBC
             String jdbc = "jdbc:postgresql://" + host + ":" + port + "/" + db + "?sslmode=" + sslmode;
 
-            // Some platforms put user/pass in query too
+            // Some platforms put user/pass in a query too
             if (!isNonBlank(user)) user = q.getOrDefault("user", q.getOrDefault("username", user));
             if (!isNonBlank(pass)) pass = q.getOrDefault("password", pass);
 
             return new DbInfo(jdbc, user, pass);
 
         } catch (URISyntaxException e) {
-            // If parsing fails, last resort: throw exception since no local fallback
+            // If parsing fails, the last resort: throw exception since no local fallback
             throw new IllegalStateException("Invalid DATABASE_URL format and no local fallback available.", e);
         }
     }
 
-    // ======================= HELPERS =======================
+    // Helpers
 
     private static String getenvAny(String... keys) {
         for (String k : keys) {
