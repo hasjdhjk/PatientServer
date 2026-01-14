@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-
+// Servlet that handles creating a new patient via POST request
 @WebServlet(urlPatterns = {"/api/patient/create"})
 public class CreatePatientServlet extends HttpServlet {
 
