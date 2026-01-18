@@ -56,38 +56,57 @@ The backend follows a standard layered design:
 
 Stores clinician account information.
 
-| Column | Type | Description |
-|<br><br>|<br><br>|<br><br><br><br>|
-| id | SERIAL | Primary key |
-| email | TEXT (UNIQUE) | Doctor login email |
-| given_name | TEXT | First name |
-| family_name | TEXT | Last name |
-| password_hash | TEXT | Hashed password |
-| verified | BOOLEAN | Account verification status |
-| verification_token | TEXT | Email verification token |
-| reset_token | TEXT | Password reset token |
-| reset_token_expires | TIMESTAMP | Reset token expiry |
+| Column               | Type             | Description                     |
+|----------------------|------------------|---------------------------------|
+| id                   | SERIAL           | Primary key                     |
+| email                | TEXT (UNIQUE)    | Doctor login email              |
+| given_name           | TEXT             | First name                      |
+| family_name          | TEXT             | Last name                       |
+| password_hash        | TEXT             | Hashed password                 |
+| verified             | BOOLEAN          | Account verification status     |
+| verification_token   | TEXT             | Email verification token        |
+| reset_token          | TEXT             | Password reset token            |
+| reset_token_expires  | TIMESTAMP        | Reset token expiry              |
 
 <br>
 
 ### Patients Table
 
-Stores patients associated with a doctor.
+Stores patients associated with a doctor account.
 
-| Column | Type | Description |
-|<br><br>|<br><br>|<br><br><br><br>|
-| id | SERIAL | Primary key |
-| doctor | TEXT | Doctor email owner |
-| given_name | TEXT | Patient first name |
-| family_name | TEXT | Patient last name |
-| gender | TEXT | Gender |
-| age | INT | Age |
-| blood_pressure | TEXT | Blood pressure (e.g. 120/80) |
+| Column          | Type    | Description                               |
+|-----------------|---------|-------------------------------------------|
+| id              | SERIAL  | Primary key                               |
+| doctor          | TEXT    | Owning doctor email                      |
+| given_name      | TEXT    | Patient first name                       |
+| family_name     | TEXT    | Patient last name                        |
+| gender          | TEXT    | Gender                                   |
+| age             | INT     | Age                                      |
+| blood_pressure  | TEXT    | Blood pressure (e.g. 120/80)             |
 
 <br>
 
 ## API Endpoints
 
+The backend exposes RESTful API endpoints for authentication and patient management.
+All endpoints consume and return **JSON** and follow standard HTTP status conventions.
+
+<br>
+
 ### Authentication
 
+Authentication endpoints handle doctor registration, login, and account verification.
+Passwords are **never stored in plaintext** and are securely hashed before persistence.
+
+<br>
+
 #### Register Doctor
+
+`curl -sS -X POST "https://bioeng-bbb-app.impaas.uk/register" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"[YOUREMAIL]","password":"[YOURPASSWORD]","givenName":"[GIVENNAME]","familyName":"[FAMILYNAME]"}'`
+
+Registers a new doctor account in the system.
+
+#### Empty demo patient database
+`curl -X POST "https://bioeng-bbb-app.impaas.uk/api/patients?action=clearDemo&doctor=demo"`
